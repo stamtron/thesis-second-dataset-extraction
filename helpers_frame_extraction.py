@@ -95,3 +95,67 @@ def count_frames_manual(video):
 
 	# return the total number of frames in the video file
 	return total
+
+def columns_of_interest(df):
+    
+    col_list = ['folder', 'video1', 'offset_Ch1', 'video2', 'offset_Ch2',
+            'video3', 'offset_Ch3', 'VWTimestamp', 'Description', 'KP', 'Observation Code']
+    
+    df = df[col_list]
+    codes = ['EXE','EXS','FJ','FJS','FJE','AN','ANS','ANE','SUS', 'SUE']
+    df = df[df['Observation Code'].isin(codes)]
+    
+    return df
+
+def fill_in_KP(df):
+    
+    df['KP'] = df['KP'].replace('-',np.NaN)
+    df['KP'] = df['KP'].fillna(method='bfill')
+    df = df.sort_values(by=['KP'])
+    return df
+
+def add_event_for_start(df):
+    df_start = df[0:1].copy()
+    df_start['offset_Ch1'].iloc[0] = 0.0
+    df_start['offset_Ch2'].iloc[0] = 0.0
+    df_start['offset_Ch3'].iloc[0] = 0.0
+    codes_start = ['EXE','FJ','FJS','FJE','AN','ANS','ANE','SUS', 'SUE']
+    
+    if df_start['Observation Code'][0] in codes_start:
+        df_start['Observation Code'][0] = 'EXS'
+    else:
+        df_start['Observation Code'][0] = 'EXE'
+        
+    df = pd.concat([df_start, df])  
+    df = df.reset_index(drop=True)
+    
+    return df
+   
+
+def add_event_for_end(df, videos):
+    
+    df_end = df[(len(df)-1):len(df)].copy()
+    codes_end = ['EXS','FJ','FJS','FJE','AN','ANS','ANE','SUS', 'SUE']
+    
+    if df_end['Observation Code'][72] not in codes_end:
+        df_end['Observation Code'][72] = 'EXS'
+    else:
+        df_end['Observation Code'][72] = 'EXE'
+    
+    for i in range(len(videos)):
+        if 'Ch2' in videos[i].parts[-1]:
+            frames_ch2 = count_frames(str(videos[i]))
+        if 'Ch1' in videos[i].parts[-1]:
+            frames_ch1 = count_frames(str(videos[i]))
+        if 'Ch3' in videos[i].parts[-1]:
+            frames_ch3 = count_frames(str(videos[i]))
+            
+    df_end['offset_Ch1'][len(df)-1] = frames_ch1 / 25
+    df_end['offset_Ch2'][len(df)-1] = frames_ch2 / 25 
+    df_end['offset_Ch3'][len(df)-1] = frames_ch3 / 25    
+    
+    df = pd.concat([df, df_end])
+    df = df.reset_index(drop=True)
+    
+    return df
+    
