@@ -137,10 +137,10 @@ def add_event_for_end(df, videos):
     df_end = df[(len(df)-1):len(df)].copy()
     codes_end = ['EXS','FJ','FJS','FJE','AN','ANS','ANE','SUS', 'SUE']
     
-    if df_end['Observation Code'][72] not in codes_end:
-        df_end['Observation Code'][72] = 'EXS'
+    if df_end['Observation Code'][len(df)-1] not in codes_end:
+        df_end['Observation Code'][len(df)-1] = 'EXS'
     else:
-        df_end['Observation Code'][72] = 'EXE'
+        df_end['Observation Code'][len(df)-1] = 'EXE'
     
     for i in range(len(videos)):
         if 'Ch2' in videos[i].parts[-1]:
