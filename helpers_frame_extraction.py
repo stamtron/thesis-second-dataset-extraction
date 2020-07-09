@@ -9,32 +9,40 @@ from tqdm import tqdm
 import re
 import glob
 
-def frame_extraction(center_video_path, path_to_save, i, df):
-    m = re.search('tos/(.+?).mpg', center_video_path)
+def frame_extraction(video_path, path_to_save, i, df, channel):
+    m = re.search('tos/(.+?).mpg', video_path)
     if m:
         name = m.group(1)
-    name = name.replace('/','__')    
+    name = name.replace('/','__')   
     path_to_save = path_to_save + name + '__' + str(int(i/2))
     if not os.path.exists(path_to_save):
         os.mkdir(path_to_save)
 
     path_to_save = path_to_save + '/'
-
-    start = float(df_new['offset'][i])*1000 + 20 
-    end = float(df_new['offset'][i+1])*1000 - 100
-    cap = cv2.VideoCapture(center_video_path)
+    
+    if channel == 1:
+        start = float(df['offset_Ch1'][i])*1000  #+ 20 
+        end = float(df['offset_Ch1'][i+1])*1000  #- 100
+    if channel == 2:
+        start = float(df['offset_Ch2'][i])*1000  #+ 20 
+        end = float(df['offset_Ch2'][i+1])*1000  #- 100
+    if channel == 3:
+        start = float(df['offset_Ch3'][i])*1000  #+ 20 
+        end = float(df['offset_Ch3'][i+1])*1000  #- 100
+        
+    cap = cv2.VideoCapture(video_path)
     cap.set(cv2.CAP_PROP_POS_MSEC, start)
     #success,image = cap.read()
     s = cap.get(cv2.CAP_PROP_POS_FRAMES)
     cap.set(cv2.CAP_PROP_POS_MSEC, end)
     #success,image = cap.read()
     e = cap.get(cv2.CAP_PROP_POS_FRAMES)
-    frames = np.arange(s, e, 4)
+    frames = np.arange(s, e)
     #if not os.path.exists(path_to_save):
     for j in range(len(frames)):
         cap.set(cv2.CAP_PROP_POS_FRAMES, frames[j])
         suc,im = cap.read()
-        cv2.imwrite(path_to_save + 'frame' + str(j) + '.png', im)
+        cv2.imwrite(path_to_save + 'frame' + '{:06d}'.format(j) + '.png', im)
         
 from convenience import is_cv3
 import cv2
