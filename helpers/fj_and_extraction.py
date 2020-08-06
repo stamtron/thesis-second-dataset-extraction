@@ -1,15 +1,17 @@
+import sys
+sys.path.append('../helpers/')
 from helpers_frame_extraction import *
 
-def fieldjoint_anode_extraction(df, videos, folder):
+def fieldjoint_anode_extraction(df, videos):
     codes = ['EXE','EXS','FJE','FJS','ANE', 'ANS','SUS','SUE']
     df_new = df[df['Observation Code'].isin(codes)]
     df_new = df_new.reset_index(drop=True)
     
-    videos = Path('/media/data/astamoulakatos/Survey-2-2012/Project 1/IC2/KP155.800-186.495_D/')
+    #videos = Path('/media/data/astamoulakatos/Survey-2-2012/Project 1/IC2/KP155.800-186.495_D/')
     
-    videos = videos / df_new['folder'][0]
+    #videos = videos / df_new['folder'][0]
     
-    video_paths = list(videos.glob('*'))
+    video_paths = videos
     
     for k in tqdm(range(0,len(df_new)-3)): 
         for i in range(len(video_paths)):

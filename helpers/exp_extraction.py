@@ -1,14 +1,16 @@
+#import sys
+#sys.path.append('../helpers/')
 from helpers_frame_extraction import *
 
-def exposure_extraction(df, videos, folder):
+def exposure_extraction(df, videos):
     codes = ['EXE','EXS','FJ','AN','SUS', 'SUE']
     df_new = df[df['Observation Code'].isin(codes)]
     df_new = df_new.reset_index(drop=True)
     
-    videos = Path('/media/data/astamoulakatos/Survey-2-2012/Project 1/IC2/KP078.553-119.732_A/')
-    videos = videos / df_new['folder'][0]
+#     videos = Path('/media/data/astamoulakatos/Survey-2-2012/Project 1/IC2/KP078.553-119.732_A/')
+#     videos = videos / df_new['folder'][0]
     
-    video_paths = list(videos.glob('*'))
+    video_paths = videos
     
     for k in tqdm(range(0,len(df_new)-1)): 
         for i in range(len(video_paths)):
