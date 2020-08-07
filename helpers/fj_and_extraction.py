@@ -2,7 +2,7 @@ import sys
 sys.path.append('../helpers/')
 from helpers_frame_extraction import *
 
-def fieldjoint_anode_extraction(df, videos):
+def fieldjoint_anode_extraction(df, videos, path):
     codes = ['EXE','EXS','FJE','FJS','ANE', 'ANS','SUS','SUE']
     df_new = df[df['Observation Code'].isin(codes)]
     df_new = df_new.reset_index(drop=True)
@@ -25,65 +25,65 @@ def fieldjoint_anode_extraction(df, videos):
             if k >= 2:
                 if (df_new['Observation Code'][k] == 'ANS'): 
                     if ((df_new['Observation Code'][k+1] == 'SUE' or df_new['Observation Code'][k+2] == 'SUE') and (df_new['Observation Code'][k-1] == 'SUS' or df_new['Observation Code'][k-2] == 'SUS')):
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/centre_Ch2/exp_fs_and/'
+                        path_to_save = path+ 'centre_Ch2/exp_fs_and/'
                         frame_extraction_with_sns(str(ch2_video), path_to_save, k, df_new, 2, 'up')
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/left_port_Ch1/exp_fs_and/'
+                        path_to_save = path + 'left_port_Ch1/exp_fs_and/'
                         frame_extraction_with_sns(str(ch1_video), path_to_save, k, df_new, 1, 'up')
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/right_starboard_Ch3/exp_fs_and/'
+                        path_to_save = path + 'right_starboard_Ch3/exp_fs_and/'
                         frame_extraction_with_sns(str(ch3_video), path_to_save, k, df_new, 3, 'up')
                     else:
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/centre_Ch2/exp_and/'
+                        path_to_save = path + 'centre_Ch2/exp_and/'
                         frame_extraction_with_sns(str(ch2_video), path_to_save, k, df_new, 2, 'up')
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/left_port_Ch1/exp_and/'
+                        path_to_save = path + 'left_port_Ch1/exp_and/'
                         frame_extraction_with_sns(str(ch1_video), path_to_save, k, df_new, 1, 'up')
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/right_starboard_Ch3/exp_and/'
+                        path_to_save = path + 'right_starboard_Ch3/exp_and/'
                         frame_extraction_with_sns(str(ch3_video), path_to_save, k, df_new, 3, 'up')
 
                 if (df_new['Observation Code'][k] == 'FJS'):
                     if ((df_new['Observation Code'][k+1] == 'SUE' or df_new['Observation Code'][k+2] == 'SUE') and (df_new['Observation Code'][k-1] == 'SUS' or df_new['Observation Code'][k-2] == 'SUS')):
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/centre_Ch2/exp_fs_fj/'
+                        path_to_save = path + 'centre_Ch2/exp_fs_fj/'
                         frame_extraction_with_sns(str(ch2_video), path_to_save, k, df_new, 2, 'up')
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/left_port_Ch1/exp_fs_fj/'
+                        path_to_save = path + 'left_port_Ch1/exp_fs_fj/'
                         frame_extraction_with_sns(str(ch1_video), path_to_save, k, df_new, 1, 'up')
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/right_starboard_Ch3/exp_fs_fj/'
+                        path_to_save = path + 'right_starboard_Ch3/exp_fs_fj/'
                         frame_extraction_with_sns(str(ch3_video), path_to_save, k, df_new, 3, 'up')
                     else:
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/centre_Ch2/exp_fj/'
+                        path_to_save = path + 'centre_Ch2/exp_fj/'
                         frame_extraction_with_sns(str(ch2_video), path_to_save, k, df_new, 2, 'up')
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/left_port_Ch1/exp_fj/'
+                        path_to_save = path + 'left_port_Ch1/exp_fj/'
                         frame_extraction_with_sns(str(ch1_video), path_to_save, k, df_new, 1, 'up')
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/right_starboard_Ch3/exp_fj/'
+                        path_to_save = path + 'right_starboard_Ch3/exp_fj/'
                         frame_extraction_with_sns(str(ch3_video), path_to_save, k, df_new, 3, 'up')
         else:
             if k >= 2:
                 if (df_new['Observation Code'][k] == 'ANE'): 
                     if ((df_new['Observation Code'][k+1] == 'SUS' or df_new['Observation Code'][k+2] == 'SUS') and (df_new['Observation Code'][k-1] == 'SUE' or df_new['Observation Code'][k-2] == 'SUE')):
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/centre_Ch2/exp_fs_and/'
+                        path_to_save = path + 'centre_Ch2/exp_fs_and/'
                         frame_extraction_with_sns(str(ch2_video), path_to_save, k, df_new, 2, 'down')
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/left_port_Ch1/exp_fs_and/'
+                        path_to_save = path + 'left_port_Ch1/exp_fs_and/'
                         frame_extraction_with_sns(str(ch1_video), path_to_save, k, df_new, 1, 'down')
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/right_starboard_Ch3/exp_fs_and/'
+                        path_to_save = path + 'right_starboard_Ch3/exp_fs_and/'
                         frame_extraction_with_sns(str(ch3_video), path_to_save, k, df_new, 3, 'down')
                     else:
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/centre_Ch2/exp_and/'
+                        path_to_save = path + 'centre_Ch2/exp_and/'
                         frame_extraction_with_sns(str(ch2_video), path_to_save, k, df_new, 2, 'down')
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/left_port_Ch1/exp_and/'
+                        path_to_save = path + 'left_port_Ch1/exp_and/'
                         frame_extraction_with_sns(str(ch1_video), path_to_save, k, df_new, 1, 'down')
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/right_starboard_Ch3/exp_and/'
+                        path_to_save = path + 'right_starboard_Ch3/exp_and/'
                         frame_extraction_with_sns(str(ch3_video), path_to_save, k, df_new, 3, 'down')
 
                 if (df_new['Observation Code'][k] == 'FJE'):
                     if ((df_new['Observation Code'][k+1] == 'SUS' or df_new['Observation Code'][k+2] == 'SUS') and (df_new['Observation Code'][k-1] == 'SUE' or df_new['Observation Code'][k-2] == 'SUE')):                
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/centre_Ch2/exp_fs_fj/'
+                        path_to_save = path + 'centre_Ch2/exp_fs_fj/'
                         frame_extraction_with_sns(str(ch2_video), path_to_save, k, df_new, 2, 'down')
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/left_port_Ch1/exp_fs_fj/'
+                        path_to_save = path + 'left_port_Ch1/exp_fs_fj/'
                         frame_extraction_with_sns(str(ch1_video), path_to_save, k, df_new, 1, 'down')
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/right_starboard_Ch3/exp_fs_fj/'
+                        path_to_save = path + 'right_starboard_Ch3/exp_fs_fj/'
                         frame_extraction_with_sns(str(ch3_video), path_to_save, k, df_new, 3, 'down')
                     else:
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/centre_Ch2/exp_fj/'
+                        path_to_save = path + 'nsea_frame_test/centre_Ch2/exp_fj/'
                         frame_extraction_with_sns(str(ch2_video), path_to_save, k, df_new, 2, 'down')
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/left_port_Ch1/exp_fj/'
+                        path_to_save = path + 'left_port_Ch1/exp_fj/'
                         frame_extraction_with_sns(str(ch1_video), path_to_save, k, df_new, 1, 'down')
-                        path_to_save = '/media/scratch/astamoulakatos/nsea_frame_test/right_starboard_Ch3/exp_fj/'
+                        path_to_save = path + 'right_starboard_Ch3/exp_fj/'
                         frame_extraction_with_sns(str(ch3_video), path_to_save, k, df_new, 3, 'down')

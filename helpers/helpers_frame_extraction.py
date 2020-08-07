@@ -56,6 +56,9 @@ def frame_extraction_between_fjan(video_path, path_to_save, i, df, channel, time
     if time == 'up':
         frames = np.arange(s, e)
     #if not os.path.exists(path_to_save):
+    if len(frames)>800:
+        times = len(frames)/800
+        frames = frames[int(times/2)*800 : (int(times/2)+1)*800]
     for j in range(len(frames)):
         cap.set(cv2.CAP_PROP_POS_FRAMES, frames[j])
         suc,im = cap.read()
@@ -106,6 +109,9 @@ def frame_extraction_special_cases_after_fjan(video_path, path_to_save, i, df, c
     if time == 'up':
         frames = np.arange(s, e)
     #if not os.path.exists(path_to_save):
+    if len(frames)>800:
+        times = len(frames)/800
+        frames = frames[int(times/2)*800 : (int(times/2)+1)*800]
     for j in range(len(frames)):
         cap.set(cv2.CAP_PROP_POS_FRAMES, frames[j])
         suc,im = cap.read()
@@ -157,6 +163,9 @@ def frame_extraction_special_cases_after_startend(video_path, path_to_save, i, d
     if time == 'up':
         frames = np.arange(s, e)
     #if not os.path.exists(path_to_save):
+    if len(frames)>800:
+        times = len(frames)/800
+        frames = frames[int(times/2)*800 : (int(times/2)+1)*800]
     for j in range(len(frames)):
         cap.set(cv2.CAP_PROP_POS_FRAMES, frames[j])
         suc,im = cap.read()
@@ -207,6 +216,9 @@ def frame_extraction_with_sns(video_path, path_to_save, i, df, channel, time):
     if time == 'up':
         frames = np.arange(s, e)
     #if not os.path.exists(path_to_save):
+    if len(frames)>800:
+        times = len(frames)/800
+        frames = frames[int(times/2)*800 : (int(times/2)+1)*800]
     for j in range(len(frames)):
         cap.set(cv2.CAP_PROP_POS_FRAMES, frames[j])
         suc,im = cap.read()
@@ -257,6 +269,9 @@ def frame_extraction_without_sns(video_path, path_to_save, i, df, channel, time)
     if time == 'up':
         frames = np.arange(s, e)
     #if not os.path.exists(path_to_save):
+    if len(frames)>800:
+        times = len(frames)/800
+        frames = frames[int(times/2)*800 : (int(times/2)+1)*800]
     for j in range(len(frames)):
         cap.set(cv2.CAP_PROP_POS_FRAMES, frames[j])
         suc,im = cap.read()

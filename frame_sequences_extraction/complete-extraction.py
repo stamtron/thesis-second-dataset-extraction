@@ -20,6 +20,7 @@ folders_path = [folders_path[9], folders_path[3], folders_path[2]]
 for c, vf in zip(csv_paths, folders_path):
     print(c , vf)
     
+path = '/media/raid/astamoulakatos/nsea_frame_sequences/'
 counter = 0
 for c, vf in zip(csv_paths, folders_path):
     events_csv = pd.read_csv(str(c))
@@ -33,14 +34,16 @@ for c, vf in zip(csv_paths, folders_path):
         if df_vid.empty:
             print('DataFrame is empty!')
         else:
-            df_vid = add_event_for_start(df_vid)
-            df_vid = add_event_for_end(df_vid)
-            vid_path = vf/f
-            videos = list(vid_path.glob('*'))
-            #print(videos)
-            counter += 1
-            print(counter)
-            suspension_extraction(df, videos)
-            fieldjoint_anode_extraction(df, videos)
-            burial_extraction(df, videos)
-            exposure_extraction(df, videos)
+            codes  = df_vid['Observation Code'].unique()
+            if 'FJS' or 'ANS' in codes:
+                df_vid = add_event_for_start(df_vid)
+                vid_path = vf/f
+                videos = list(vid_path.glob('*'))
+                df_vid = add_event_for_end(df_vid, videos)
+                #print(videos)
+                counter += 1
+                print(counter)
+                suspension_extraction(df_vid, videos, path)
+                fieldjoint_anode_extraction(df_vid, videos, path)
+                burial_extraction(df_vid, videos, path)
+                exposure_extraction(df_vid, videos, path)
