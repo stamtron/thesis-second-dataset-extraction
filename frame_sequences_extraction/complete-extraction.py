@@ -34,15 +34,16 @@ for c, vf in zip(csv_paths, folders_path):
             print('DataFrame is empty!')
         else:
             codes  = df_vid['Observation Code'].unique()
-#             if 'FJS' or 'ANS' in codes:
-            df_vid = add_event_for_start(df_vid)
-            vid_path = vf/f
-            videos = list(vid_path.glob('*'))
-            df_vid = add_event_for_end(df_vid, videos)
-            #print(videos)
-            counter += 1
-            print(counter)
-            suspension_extraction(df_vid, videos, path)
-            fieldjoint_anode_extraction(df_vid, videos, path)
-            #burial_extraction(df_vid, videos, path)
-            #exposure_extraction(df_vid, videos, path)
+            if 'FJS' or 'ANS' in codes:
+                df_vid = add_event_for_start(df_vid)
+                vid_path = vf/f
+                videos = list(vid_path.glob('*'))
+                df_vid = add_event_for_end(df_vid, videos)
+                df_vid = convert_to_ms(df_vid)
+                #print(videos)
+                counter += 1
+                print(counter)
+                #suspension_extraction(df_vid, videos, path)
+                fieldjoint_anode_extraction(df_vid, videos, path)
+                #burial_extraction(df_vid, videos, path)
+                #exposure_extraction(df_vid, videos, path)
