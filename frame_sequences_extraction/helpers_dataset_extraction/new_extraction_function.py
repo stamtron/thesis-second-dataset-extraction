@@ -42,7 +42,7 @@ def extract_frames(video_path, path_to_save, channel, start, stop=None, nframes=
     stop_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
     cap.set(cv2.CAP_PROP_POS_MSEC, start)
     start_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
-    frames = np.arange(start_frame, stop_frame)
+    frames = np.arange(start_frame + 45, stop_frame + 20)
     for j in range(len(frames)):
         cap.set(cv2.CAP_PROP_POS_FRAMES, frames[j])
         suc,im = cap.read()
