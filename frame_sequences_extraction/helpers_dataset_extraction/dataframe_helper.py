@@ -89,8 +89,9 @@ def fill_in_KP(df):
     
     df['KP'] = df['KP'].replace('-',np.NaN)
     df['KP'] = df['KP'].fillna(method='bfill')
-    df = df.sort_values(by=['KP'])
-    df = df.reset_index(drop=True)
+    df['KP'] = df['KP'].fillna(method='ffill')
+    #df = df.sort_values(by=['KP'])
+    #df = df.reset_index(drop=True)
     return df
 
 def add_event_for_start(df):

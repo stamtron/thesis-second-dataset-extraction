@@ -35,14 +35,18 @@ def extract_frames(video_path, path_to_save, channel, start, stop=None, nframes=
         # No need to do anything stop is already time
         pass 
     
-    assert(stop>start), f"The end time for video {filename} provided is before the start time {start}, {stop}"
+    assert(stop>start), f"The end time for video {video_path} provided is before the start time {start}, {stop}"
     assert(stop<(1000*cap.get(cv2.CAP_PROP_FRAME_COUNT)*cap.get(cv2.CAP_PROP_FPS))), "stop greater than video end"
     
     cap.set(cv2.CAP_PROP_POS_MSEC, stop)
     stop_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
     cap.set(cv2.CAP_PROP_POS_MSEC, start)
     start_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
-    frames = np.arange(start_frame + 45, stop_frame + 20)
+    frames = np.arange(start_frame + 20, stop_frame - 20)
+    #print('YO!!!')
+    if len(frames)>400:
+        times = len(frames)/400
+        frames = frames[int(times/2)*400 : (int(times/2)+1)*400]
     for j in range(len(frames)):
         cap.set(cv2.CAP_PROP_POS_FRAMES, frames[j])
         suc,im = cap.read()

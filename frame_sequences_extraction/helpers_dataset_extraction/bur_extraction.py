@@ -1,9 +1,10 @@
 #import sys
 #sys.path.append('../helpers/')
-from helpers_frame_extraction import *
+from dataframe_helper import *
+from new_extraction_function import *
 
 def burial_extraction(df, videos, path):
-    codes = ['EXE','EXS','FJS','ANS', 'FJE', 'ANE']
+    codes = ['EXE','EXS','FJ','AN', 'FJE', 'ANE']
     df_new = df[df['Observation Code'].isin(codes)]
     df_new = df_new.reset_index(drop=True)
 #     df_new = df_new.sort_values(by=['KP'])
@@ -22,19 +23,33 @@ def burial_extraction(df, videos, path):
                 ch1_video = video_paths[i]
             if 'Ch3' in video_paths[i].parts[-1]:
                 ch3_video = video_paths[i]
-        if (df_new['offset_Ch1'][k] < df_new['offset_Ch1'][k+1]):
-            if (df_new['Observation Code'][k] == 'EXE') & (df_new['Observation Code'][k+1] == 'EXS'):
+                
+        #print(df_new['KP'][k], df_new['KP'][k+1])#if isinstance(df_new['KP'][k], float):# and isinstance(df_new['KP'][k+1], float):
+        if (df_new['KP'][k] <= df_new['KP'][k+1]):
+            if (df_new['Observation Code'][k] == 'EXE') and (df_new['Observation Code'][k+1] == 'EXS'):
                 path_to_save = path + 'centre_Ch2/bur/'
-                frame_extraction_with_sns(str(ch2_video), path_to_save, k, df_new, 2, 'up')
+                start = df_new['offset_Ch2'][k]
+                stop = df_new['offset_Ch2'][k+1]
+                extract_frames(str(ch2_video), path_to_save, 2, start, stop, nframes=None)      
                 path_to_save = path + 'left_port_Ch1/bur/'
-                frame_extraction_with_sns(str(ch1_video), path_to_save, k, df_new, 1, 'up')
+                start = df_new['offset_Ch1'][k]
+                stop = df_new['offset_Ch1'][k+1]
+                extract_frames(str(ch1_video), path_to_save, 1, start, stop, nframes=None)
                 path_to_save = path + 'right_starboard_Ch3/bur/'
-                frame_extraction_with_sns(str(ch3_video), path_to_save, k, df_new, 3, 'up')
+                start = df_new['offset_Ch3'][k]
+                stop = df_new['offset_Ch3'][k+1]
+                extract_frames(str(ch3_video), path_to_save, 3, start, stop, nframes=None)     
         else:
-            if (df_new['Observation Code'][k] == 'EXS') & (df_new['Observation Code'][k+1] == 'EXE'):
+            if (df_new['Observation Code'][k] == 'EXS') and (df_new['Observation Code'][k+1] == 'EXE'):
                 path_to_save = path + 'centre_Ch2/bur/'
-                frame_extraction_with_sns(str(ch2_video), path_to_save, k, df_new, 2, 'down')
+                start = df_new['offset_Ch2'][k]
+                stop = df_new['offset_Ch2'][k+1]
+                extract_frames(str(ch2_video), path_to_save, 2, start, stop, nframes=None)      
                 path_to_save = path + 'left_port_Ch1/bur/'
-                frame_extraction_with_sns(str(ch1_video), path_to_save, k, df_new, 1, 'down')
+                start = df_new['offset_Ch1'][k]
+                stop = df_new['offset_Ch1'][k+1]
+                extract_frames(str(ch1_video), path_to_save, 1, start, stop, nframes=None)      
                 path_to_save = path + 'right_starboard_Ch3/bur/'
-                frame_extraction_with_sns(str(ch3_video), path_to_save, k, df_new, 3, 'down')
+                start = df_new['offset_Ch3'][k]
+                stop = df_new['offset_Ch3'][k+1]
+                extract_frames(str(ch3_video), path_to_save, 3, start, stop, nframes=None)   
