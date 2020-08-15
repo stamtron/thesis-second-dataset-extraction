@@ -9,25 +9,25 @@ from exp_extraction import *
 from new_extraction_function import *
 from dataframe_helper import *
 
-#csv_path = Path('../csvs_with_startends/')
+csv_path = Path('../csvs_with_startends/')
 
-csv_path = Path('../csv_for_frame_extraction/')
+#csv_path = Path('../csv_for_frame_extraction/')
 csv_paths = list(csv_path.glob('*'))
 
 folder_path = Path('/media/data/astamoulakatos/Survey-2-2012/Project 1/IC2')
 
 folders_path = list(folder_path.glob('*'))
 
-folders_path = [folders_path[9], folders_path[0], folders_path[5], folders_path[1], folders_path[10], folders_path[4], folders_path[7], folders_path[3], folders_path[8], folders_path[2]]
+#folders_path = [folders_path[9], folders_path[0], folders_path[5], folders_path[1], folders_path[10], folders_path[4], folders_path[7], folders_path[3], folders_path[8], folders_path[2]]
 
-#folders_path_3 = [folders_path[9], folders_path[3], folders_path[2] ]
+folders_path_3 = [folders_path[9], folders_path[3], folders_path[2]]
 
-for c, vf in zip(csv_paths, folders_path):
+for c, vf in zip(csv_paths, folders_path_3):
     print(c , vf)
     
 path = '/media/raid/astamoulakatos/nsea_frame_sequences/'
 counter = 0
-for c, vf in zip(csv_paths, folders_path):
+for c, vf in zip(csv_paths, folders_path_3):
     events_csv = pd.read_csv(str(c))
     folders = events_csv['folder'].unique()
     for f in folders:
@@ -50,7 +50,7 @@ for c, vf in zip(csv_paths, folders_path):
             #print(videos)
             counter += 1
             print(counter)
-            suspension_extraction(df_vid, videos, path)
+            #suspension_extraction(df_vid, videos, path)
             #fieldjoint_anode_extraction(df_vid, videos, path)
             #burial_extraction(df_vid, videos, path)
-            #exposure_extraction(df_vid, videos, path)
+            exposure_extraction(df_vid, videos, path)
