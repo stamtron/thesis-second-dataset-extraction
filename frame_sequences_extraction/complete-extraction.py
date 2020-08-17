@@ -45,7 +45,7 @@ for c, vf in zip(csv_paths, folders_path_3):
             df_vid = add_event_for_start(df_vid)
             vid_path = vf/f
             videos = list(vid_path.glob('*'))
-            #df_vid = add_event_for_end(df_vid, videos)
+            df_vid = add_event_for_end(df_vid, videos)
             df_vid = convert_to_ms(df_vid)
             #print(videos)
             counter += 1
