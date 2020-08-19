@@ -30,7 +30,7 @@ def get_tensor_transform(finetuned_dataset):
             ClipToTensor(channel_nb=3),
             vidNormalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ]
-    if finetuned_dataset == 'ActivityNet':
+    if finetuned_dataset == 'Kinetics':
         norm_value=255
         video_transform_list = [
             ClipToTensor(channel_nb=3),
