@@ -19,8 +19,11 @@ import sys
 from collections import namedtuple
 from torchsummary1 import summary
 import glob
-from dataloader import *
-sys.path.append('../3D-ResNets-PyTorch/')
+from tqdm import trange
+sys.path.append('../data_visualization_and_augmentations/')
+from new_dataloader import *
+from load_data_and_augmentations import *
+sys.path.append('../../3D-ResNets-PyTorch/')
 import model
 from model import generate_model
 import time
