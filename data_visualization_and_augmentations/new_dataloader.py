@@ -65,7 +65,7 @@ class MyDataset(Dataset):
     def __getitem__(self, index):
         start = index
         end = index + self.seq_length
-        print('Getting images from {} to {}'.format(start, end))
+        #print('Getting images from {} to {}'.format(start, end))
         indices = list(range(start, end))
         images = []
         tr = self.transform
@@ -76,7 +76,10 @@ class MyDataset(Dataset):
         x = self.transform(images)
         x = self.tensor_transform(x)
         y = torch.tensor([self.image_paths[start][1]], dtype=torch.long)
-        x = x.permute(1,0,2,3)
+        y = y.squeeze(dim=0)
+        y = y.float()
+        #print(y.shape)
+        #x = x.permute(1,0,2,3)
         return x, y
     
     def __len__(self):

@@ -55,9 +55,9 @@ def get_video_transform(n):
         va.Pepper(),
         va.PiecewiseAffineTransform(0.3,0.3,0.3),
         va.Salt(),
-        va.TemporalRandomCrop(size=16),
-        va.TemporalElasticTransformation(),
-        va.InverseOrder(),
+        #va.TemporalRandomCrop(size=16),
+        #va.TemporalElasticTransformation(),
+        #va.InverseOrder(),
     ], N=n)
     return transform
 
@@ -111,15 +111,17 @@ def get_loader(seq_length, bs, end_idx, class_image_paths, transform, tensor_tra
     return loader
 
 
-def show_batch(loader):
-    # Get a batch of training data
-    inputs, classes = next(iter(loader))
-    inputs = inputs.squeeze(dim = 0)
-    # Make a grid from batch
-    class_names = ['exp_fs','bur','exp','exp_and','exp_fj']
-    one_hot_classes = [[1,0,0,0,1],[0,1,0,0,0],[1,0,0,0,0],[1,0,0,1,0],[1,0,0,1,0]]
-    out = torchvision.utils.make_grid(inputs)
-    for i, f in enumerate(one_hot_classes):
-        if np.array_equal(classes[0][0].numpy(), np.asarray(f)):
-            title = class_names[i]
-    imshow(out, title=title)
+# def show_one_batch(loader):
+#     # Get a batch of training data
+#     inputs, classes = next(iter(loader))
+#     #inputs = inputs.permute(0,2,1,3,4)
+#     inputs = inputs.squeeze(dim = 0)
+
+#     # Make a grid from batch
+#     class_names = ['exp_fs','bur','exp','exp_and','exp_fj']
+#     one_hot_classes = [[1,0,0,0,1],[0,1,0,0,0],[1,0,0,0,0],[1,0,0,1,0],[1,0,0,1,0]]
+#     out = torchvision.utils.make_grid(inputs)
+#     for i, f in enumerate(one_hot_classes):
+#         if np.array_equal(classes[0][0].numpy(), np.asarray(f)):
+#             title = class_names[i]
+#     imshow(out, title=title)
