@@ -62,8 +62,8 @@ def get_video_transform(n):
     return transform
 
 
-def get_df(seq_length, valid=False):
-    df = pd.read_csv('../important_csvs/events_with_number_of_frames_stratified.csv')
+def get_df(df, seq_length, valid=False):
+    #df = pd.read_csv('../important_csvs/events_with_number_of_frames_stratified.csv')
     df_new = df[df.number_of_frames>=seq_length]
     if valid:
         df_new = df_new[df_new.fold==0]
