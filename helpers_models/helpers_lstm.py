@@ -1,5 +1,11 @@
+import pickle
+from livelossplot import PlotLosses
+from torch_lr_finder import LRFinder
+import seaborn as sns
+from tqdm import trange
+import sklearn
 import sys
-sys.path.append('../video-classification/ResNetCRNN/')
+sys.path.append('../../video-classification/ResNetCRNN/')
 import os
 import numpy as np
 import torch
@@ -15,9 +21,10 @@ from functions_new import *
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 from sklearn.metrics import accuracy_score
-import pickle
 from torchsummary1 import summary
-from dataloader import *
+sys.path.append('../data_visualization_and_augmentations/')
+from new_dataloader import *
+from load_data_and_augmentations import *
 from sklearn.metrics import precision_score,f1_score, accuracy_score, jaccard_score
 
 
@@ -146,8 +153,8 @@ def load_model(bs):
 def parallelize_model(cnn_encoder, rnn_decoder):
     if torch.cuda.device_count() > 1:
         print("Using", torch.cuda.device_count(), "GPUs!")
-        cnn_encoder = nn.DataParallel(cnn_encoder, device_ids=[0,1,2,3])
-        rnn_decoder = nn.DataParallel(rnn_decoder, device_ids=[0,1,2,3])
+        cnn_encoder = nn.DataParallel(cnn_encoder, device_ids=[0,1])
+        rnn_decoder = nn.DataParallel(rnn_decoder, device_ids=[0,1])
         # Combine all EncoderCNN + DecoderRNN parameters
         crnn_params = list(cnn_encoder.parameters()) + list(rnn_decoder.parameters())
 #         crnn_params = list(cnn_encoder.resnet[8].parameters()) + list(cnn_encoder.headbn1.parameters()) + list(cnn_encoder.fc1.parameters()) + list(rnn_decoder.parameters())    
