@@ -1,3 +1,5 @@
+from livelossplot import PlotLosses
+from torch_lr_finder import LRFinder
 import os
 import torch
 import torch.nn as nn
@@ -122,12 +124,13 @@ def show_batch(loader, bs):
     class_names = ['exp_and','exp_fs','exp','exp_fj','bur']
     one_hot_classes = [[1,0,1,0,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,0,1,0],[0,1,0,0,0]]
     inputs, classes = next(iter(loader))
+    inputs = inputs.permute(0,2,1,3,4)
     inputs = inputs.squeeze(dim = 0)
     for j in range(bs):
         # Make a grid from batch
         out = torchvision.utils.make_grid(inputs[j])
         for i, f in enumerate(one_hot_classes):
-            if np.array_equal(classes[j][0].numpy(), np.asarray(f)):
+            if np.array_equal(classes[j].numpy(), np.asarray(f)):
                 title = class_names[i]
         imshow(out, title=title)
 
