@@ -94,14 +94,15 @@ def get_indices(df):
     return class_image_paths, end_idx
 
 
-def get_loader(seq_length, bs, end_idx, class_image_paths, transform, tensor_transform):
+def get_loader(seq_length, bs, end_idx, class_image_paths, transform, tensor_transform, lstm):
     sampler = MySampler(end_idx, seq_length)
     dataset = MyDataset(
         image_paths=class_image_paths,
         seq_length=seq_length,
         transform=transform,
         tensor_transform=tensor_transform,
-        length=len(sampler))
+        length=len(sampler),
+        lstm =lstm)
     loader = DataLoader(
         dataset,
         batch_size=bs,

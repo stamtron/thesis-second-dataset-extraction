@@ -55,12 +55,13 @@ class MySampler(torch.utils.data.Sampler):
     
     
 class MyDataset(Dataset):
-    def __init__(self, image_paths, seq_length, transform, tensor_transform, length): #csv_file, 
+    def __init__(self, image_paths, seq_length, transform, tensor_transform, length, lstm=False): #csv_file, 
         self.image_paths = image_paths
         self.seq_length = seq_length
         self.transform = transform
         self.tensor_transform = tensor_transform
         self.length = length
+        self.lstm = lstm
         
     def __getitem__(self, index):
         start = index
@@ -79,7 +80,8 @@ class MyDataset(Dataset):
         y = y.squeeze(dim=0)
         y = y.float()
         #print(y.shape)
-        #x = x.permute(1,0,2,3)
+        if self.lstm:
+            x = x.permute(1,0,2,3)
         return x, y
     
     def __len__(self):
