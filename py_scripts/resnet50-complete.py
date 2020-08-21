@@ -1,8 +1,4 @@
 from helpers_resnet import *
-#from torchsummary1 import summary
-from torch.autograd import Variable
-from sklearn.metrics import precision_score,f1_score, accuracy_score, jaccard_score
-from tqdm import trange
 
 resnet = torchvision.models.resnet50(pretrained=True)
 adaptive_pooling = AdaptiveConcatPool2d()
@@ -10,7 +6,7 @@ head = Head()
 resnet.avgpool = adaptive_pooling
 resnet.fc = head
 
-os.environ['CUDA_VISIBLE_DEVICES']='1,2,3'
+os.environ['CUDA_VISIBLE_DEVICES']='1,2'
 
 resnet = resnet.cuda()
 

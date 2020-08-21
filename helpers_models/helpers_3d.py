@@ -1,3 +1,4 @@
+from torchsummaryX import summary
 import pickle
 from livelossplot import PlotLosses
 from torch_lr_finder import LRFinder
@@ -20,7 +21,7 @@ import re
 from PIL import Image
 import sys
 from collections import namedtuple
-from torchsummary1 import summary
+from torchsummary1 import summary_old
 import glob
 from tqdm import trange
 sys.path.append('../data_visualization_and_augmentations/')

@@ -1,3 +1,4 @@
+from torchsummaryX import summary
 import pickle
 from livelossplot import PlotLosses
 from torch_lr_finder import LRFinder
@@ -21,7 +22,7 @@ from functions_new import *
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 from sklearn.metrics import accuracy_score
-from torchsummary1 import summary
+from torchsummary1 import summary_old
 sys.path.append('../data_visualization_and_augmentations/')
 from new_dataloader import *
 from load_data_and_augmentations import *
