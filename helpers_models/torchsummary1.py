@@ -4,10 +4,10 @@ from torch.autograd import Variable
 
 from collections import OrderedDict
 
-batch_size = 2
+batch_size = 1
 
 
-def summary(model, input_size):
+def summary_old(model, input_size):
         def get_shape(output):
             shape = []
             if isinstance(output, (list, tuple)):
