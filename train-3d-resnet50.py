@@ -53,16 +53,17 @@ valid_transform = get_video_transform(0)
 df = pd.read_csv('./important_csvs/events_with_number_of_frames_stratified.csv')
 df = get_df(df, 16, False)
 class_image_paths, end_idx = get_indices(df)
-train_loader = get_loader(16, 4, end_idx, class_image_paths, train_transform, tensor_transform, False)
+train_loader = get_loader(16, 4, end_idx, class_image_paths, train_transform, tensor_transform, False, False)
 df = pd.read_csv('./important_csvs/events_with_number_of_frames_stratified.csv')
 df = get_df(df, 16, True)
 class_image_paths, end_idx = get_indices(df)
-valid_loader = get_loader(16, 4, end_idx, class_image_paths, valid_transform, tensor_transform, False)
+valid_loader = get_loader(16, 4, end_idx, class_image_paths, valid_transform, tensor_transform, False, False)
 
 lr = 6e-2
+epochs = 6
 optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-2)
 criterion = nn.BCEWithLogitsLoss()
-scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=20)
+scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)
 torch.cuda.empty_cache()
 
 dataloaders = {
@@ -73,6 +74,6 @@ dataloaders = {
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 save_model_path = '/media/raid/astamoulakatos/saved-3d-models/'
 
-train_model(dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=6)
+train_model(dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=epochs)
 
 
