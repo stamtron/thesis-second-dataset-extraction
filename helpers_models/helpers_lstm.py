@@ -4,6 +4,7 @@ from livelossplot import PlotLosses
 from torch_lr_finder import LRFinder
 import seaborn as sns
 from tqdm import trange
+import torch.optim as optim
 import sklearn
 import sys
 sys.path.append('../../video-classification/ResNetCRNN/')
