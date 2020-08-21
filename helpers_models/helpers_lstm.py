@@ -249,7 +249,7 @@ def validation(cnn_encoder, rnn_decoder, device, criterion, valid_loader, optimi
     return result
 
 
-def train_model(model, criterion, optimizer, scheduler, num_epochs=6):
+def train_model(dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=6):
     #liveloss = PlotLosses()
     model = model.to(device)
     val_loss = 100

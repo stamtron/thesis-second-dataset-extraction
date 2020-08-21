@@ -175,7 +175,7 @@ def show_batch(loader, bs):
         # Make a grid from batch
         out = torchvision.utils.make_grid(inputs[j])
         for i, f in enumerate(one_hot_classes):
-            if np.array_equal(classes[j][0].numpy(), np.asarray(f)):
+            if np.array_equal(classes[j].numpy(), np.asarray(f)):
                 title = class_names[i]
         imshow(out, title=title)
         
@@ -203,3 +203,96 @@ def nsea_compute_thresholds(y):
         opt_thres = t[opt_id[i]]
         result[event_type] = opt_thres
     return result
+
+
+def train_model(dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=6):
+    #liveloss = PlotLosses()
+    model = model.to(device)
+    val_loss = 100
+    val_losses = []
+    val_acc = []
+    val_f1 = []
+    train_losses = []
+    train_acc = []
+    train_f1 = []
+    for epoch in range(num_epochs):
+        logs = {}
+        for phase in ['train', 'validation']:
+            if phase == 'train':
+                model.train()
+            else:
+                model.eval()
+
+            running_loss = 0.0
+            running_acc = 0.0  
+            running_f1 = 0.0
+            #train_result = []
+
+            for inputs, labels in dataloaders[phase]:
+                inputs = inputs.to(device)
+                labels = labels.to(device)
+
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+
+                if phase == 'train':
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+                    scheduler.step()
+
+                preds = torch.sigmoid(outputs).data > 0.5
+                preds = preds.to(torch.float32) 
+                
+                running_loss += loss.item() * inputs.size(0)
+                running_acc += accuracy_score(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
+                running_f1 += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="samples")  *  inputs.size(0)
+           
+            epoch_loss = running_loss / len(dataloaders[phase].dataset)
+            epoch_acc = running_acc / len(dataloaders[phase].dataset)
+            epoch_f1 = running_f1 / len(dataloaders[phase].dataset)
+            
+            if phase == 'train':
+                train_losses.append(epoch_loss)
+                train_acc.append(epoch_acc)
+                train_f1.append(epoch_f1)
+            
+            #prefix = ''
+            if phase == 'validation':
+                #prefix = 'val_'
+                val_losses.append(epoch_loss)
+                val_acc.append(epoch_acc)
+                val_f1.append(epoch_f1)
+                
+                if epoch_loss < val_loss:
+                    val_loss = epoch_loss
+                    save_path = f'{save_model_path}/best-checkpoint-{str(epoch).zfill(3)}epoch.pth'
+                    states = {  'model_state_dict': model.state_dict(),
+                                'optimizer_state_dict': optimizer.state_dict(),
+                                'scheduler_state_dict': scheduler.state_dict(),
+                                'val_loss': epoch_loss,
+                                'epoch': epoch,  }
+                    
+                    torch.save(states, save_file_path)
+                    for path in sorted(glob(f'{save_model_path}/best-checkpoint-*epoch.pth'))[:-3]:
+                        os.remove(path)
+                
+#             logs[prefix + 'log loss'] = epoch_loss.item()
+#             logs[prefix + 'accuracy'] = epoch_acc.item()
+#             logs[prefix + 'f1_score'] = epoch_f1.item()
+            
+#         liveloss.update(logs)
+#         liveloss.send()
+        with open("val_losses.txt", "wb") as fp:   #Pickling
+            pickle.dump(val_losses, fp)
+        with open("val_acc.txt", "wb") as fp:   #Pickling
+            pickle.dump(val_acc, fp)
+        with open("val_f1.txt", "wb") as fp:   #Pickling
+            pickle.dump(val_f1, fp)
+        with open("train_losses.txt", "wb") as fp:   #Pickling
+            pickle.dump(train_losses, fp)
+        with open("train_acc.txt", "wb") as fp:   #Pickling
+            pickle.dump(train_acc, fp)
+        with open("train_f1.txt", "wb") as fp:   #Pickling
+            pickle.dump(train_f1, fp)
+            
