@@ -1,3 +1,4 @@
+from barbar import Bar
 import sys
 sys.path.append('../data_visualization_and_augmentations/')
 from new_dataloader import *
@@ -25,6 +26,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import average_precision_score, precision_recall_curve, accuracy_score, recall_score, precision_score, f1_score
 from sklearn.metrics import multilabel_confusion_matrix, precision_recall_fscore_support
+import tqdm
 
 
 def nsea_compute_thresholds(y_true, y_pred):
@@ -205,10 +207,11 @@ def nsea_compute_thresholds(y):
     return result
 
 
-def train_model(dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=6):
+def train_model_yo(dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=6):
     #liveloss = PlotLosses()
     model = model.to(device)
     val_loss = 100
+    
     val_losses = []
     val_acc = []
     val_f1 = []
@@ -227,8 +230,7 @@ def train_model(dataloaders, device, model, criterion, optimizer, scheduler, num
             running_acc = 0.0  
             running_f1 = 0.0
             #train_result = []
-
-            for inputs, labels in dataloaders[phase]:
+            for counter, (inputs, labels) in enumerate(Bar(dataloaders[phase])):
                 inputs = inputs.to(device)
                 labels = labels.to(device)
 
@@ -248,6 +250,18 @@ def train_model(dataloaders, device, model, criterion, optimizer, scheduler, num
                 running_acc += accuracy_score(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
                 running_f1 += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="samples")  *  inputs.size(0)
            
+                if (counter!=0) and (counter%100==0):
+                    if phase == 'train':
+                        result = '  Training Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(running_loss/(inputs.size(0)*counter),
+                                                                                         running_acc/(inputs.size(0)*counter),
+                                                                                         running_f1/(inputs.size(0)*counter))
+                        print(result)
+                    if phase == 'validation':
+                        result = '  Validation Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(running_loss/(inputs.size(0)*counter),
+                                                                                         running_acc/(inputs.size(0)*counter),
+                                                                                         running_f1/(inputs.size(0)*counter))
+                        print(result)
+                        
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
             epoch_acc = running_acc / len(dataloaders[phase].dataset)
             epoch_f1 = running_f1 / len(dataloaders[phase].dataset)
@@ -283,16 +297,16 @@ def train_model(dataloaders, device, model, criterion, optimizer, scheduler, num
             
 #         liveloss.update(logs)
 #         liveloss.send()
-        with open("val_losses.txt", "wb") as fp:   #Pickling
+        with open("resnet_val_losses.txt", "wb") as fp:   #Pickling
             pickle.dump(val_losses, fp)
-        with open("val_acc.txt", "wb") as fp:   #Pickling
+        with open("resnet_val_acc.txt", "wb") as fp:   #Pickling
             pickle.dump(val_acc, fp)
-        with open("val_f1.txt", "wb") as fp:   #Pickling
+        with open("resnet_val_f1.txt", "wb") as fp:   #Pickling
             pickle.dump(val_f1, fp)
-        with open("train_losses.txt", "wb") as fp:   #Pickling
+        with open("resnet_train_losses.txt", "wb") as fp:   #Pickling
             pickle.dump(train_losses, fp)
-        with open("train_acc.txt", "wb") as fp:   #Pickling
+        with open("resnet_train_acc.txt", "wb") as fp:   #Pickling
             pickle.dump(train_acc, fp)
-        with open("train_f1.txt", "wb") as fp:   #Pickling
+        with open("resnet_train_f1.txt", "wb") as fp:   #Pickling
             pickle.dump(train_f1, fp)
             
