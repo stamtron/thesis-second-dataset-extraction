@@ -207,7 +207,7 @@ def nsea_compute_thresholds(y):
     return result
 
 
-def train_model_yo(dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=6):
+def train_model_yo(save_path, dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=6):
     #liveloss = PlotLosses()
     model = model.to(device)
     val_loss = 100
@@ -250,7 +250,7 @@ def train_model_yo(dataloaders, device, model, criterion, optimizer, scheduler, 
                 running_acc += accuracy_score(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
                 running_f1 += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="samples")  *  inputs.size(0)
            
-                if (counter!=0) and (counter%100==0):
+                if (counter!=0) and (counter%400==0):
                     if phase == 'train':
                         result = '  Training Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(running_loss/(inputs.size(0)*counter),
                                                                                          running_acc/(inputs.size(0)*counter),
@@ -309,4 +309,3 @@ def train_model_yo(dataloaders, device, model, criterion, optimizer, scheduler, 
             pickle.dump(train_acc, fp)
         with open("resnet_train_f1.txt", "wb") as fp:   #Pickling
             pickle.dump(train_f1, fp)
-            
