@@ -233,9 +233,10 @@ def train_model_yo(save_path, dataloaders, device, model, criterion, optimizer, 
             for counter, (inputs, labels) in enumerate(Bar(dataloaders[phase])):
                 inputs = inputs.to(device)
                 labels = labels.to(device)
-
-                outputs = model(inputs)
-                loss = criterion(outputs, labels)
+                
+                with torch.set_grad_enabled(phase == 'train'):
+                    outputs = model(inputs)
+                    loss = criterion(outputs, labels)
 
                 if phase == 'train':
                     optimizer.zero_grad()
