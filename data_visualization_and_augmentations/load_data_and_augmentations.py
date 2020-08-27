@@ -91,14 +91,14 @@ def get_spatial_transform(n):
     return transform
 
 
-def get_df(df, seq_length, valid=False, test=False):
+def get_df(df, seq_length, train=False, valid=False, test=False):
     #df = pd.read_csv('../important_csvs/events_with_number_of_frames_stratified.csv')
     df_new = df[df.number_of_frames>=seq_length]
     if test:
         df_new = df_new[df_new.fold==0]
     if valid:
         df_new = df_new[df_new.fold==1]
-    else:
+    if train:
         df_new = df_new[df_new['fold'].isin([2,3,4])]
     return df_new
 
@@ -125,12 +125,12 @@ def get_indices(df):
     return class_image_paths, end_idx
 
 
-def get_loader(seq_length, bs, end_idx, class_image_paths, transform, spat_transform, tensor_transform, lstm, oned):
+def get_loader(seq_length, bs, end_idx, class_image_paths, temp_transform, spat_transform, tensor_transform, lstm, oned):
     sampler = MySampler(end_idx, seq_length)
     dataset = MyDataset(
         image_paths = class_image_paths,
         seq_length = seq_length,
-        transform = transform,
+        temp_transform = temp_transform,
         spat_transform = spat_transform,
         tensor_transform = tensor_transform,
         length = len(sampler),
