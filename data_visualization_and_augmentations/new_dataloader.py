@@ -55,10 +55,10 @@ class MySampler(torch.utils.data.Sampler):
     
     
 class MyDataset(Dataset):
-    def __init__(self, image_paths, seq_length, transform, spat_transform, tensor_transform, length, lstm=False, oned = False): #csv_file, 
+    def __init__(self, image_paths, seq_length, temp_transform, spat_transform, tensor_transform, length, lstm=False, oned = False): #csv_file, 
         self.image_paths = image_paths
         self.seq_length = seq_length
-        self.transform = transform
+        self.temp_transform = temp_transform
         self.spat_transform = spat_transform
         self.tensor_transform = tensor_transform
         self.length = length
@@ -71,12 +71,14 @@ class MyDataset(Dataset):
         #print('Getting images from {} to {}'.format(start, end))
         indices = list(range(start, end))
         images = []
-        tr = self.transform
+        #tr = self.transform
         for i in indices:
             image_path = self.image_paths[i][0]
             image = Image.open(image_path)
             images.append(image)
-        x = self.transform(images)
+        x = images
+        if not self.oned:
+            x = self.temp_transform(x)
         x = self.spat_transform(x)
         x = self.tensor_transform(x)
         y = torch.tensor([self.image_paths[start][1]], dtype=torch.long)

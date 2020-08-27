@@ -37,13 +37,13 @@ valid_spat_transform = get_spatial_transform(0)
 valid_temp_transform = va.TemporalFit(size=16)
 
 df = pd.read_csv('./important_csvs/events_with_number_of_frames_stratified.csv')
-df = get_df(df, 16, True, False)
+df = get_df(df, 50, False, True, False)
 class_image_paths, end_idx = get_indices(df)
-train_loader = get_loader(1, 8, end_idx, class_image_paths, train_spat_transform, train_temp_transform, tensor_transform, False, True)
+train_loader = get_loader(1, 8, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, True)
 df = pd.read_csv('./important_csvs/events_with_number_of_frames_stratified.csv')
-df = get_df(df, 16, False, True)
+df = get_df(df, 50, False, False, True)
 class_image_paths, end_idx = get_indices(df)
-valid_loader = get_loader(1, 8, end_idx, class_image_paths, valid_spat_transform, valid_temp_transform, tensor_transform, False, True)
+valid_loader = get_loader(1, 8, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True)
 
 torch.cuda.empty_cache()
 
