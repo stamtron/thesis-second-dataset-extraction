@@ -1,7 +1,7 @@
 import os
 import torch
 import pandas as pd
-from skimage import io, transform
+#from skimage import io, transform
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
@@ -56,7 +56,25 @@ def get_tensor_transform(finetuned_dataset):
     return tensor_transform
 
 
-def get_video_transform(n):
+def get_temporal_transform():
+    temp_transform = va.OneOf([
+        va.TemporalBeginCrop(size=16),
+        va.TemporalCenterCrop(size=16),
+        va.TemporalRandomCrop(size=16),
+        va.TemporalFit(size=16),
+        va.Sequential([
+            va.TemporalElasticTransformation(),
+            va.TemporalFit(size=16),
+        ]),
+        va.Sequential([     
+            va.InverseOrder(),
+            va.TemporalFit(size=16),
+        ]),
+    ])
+    return temp_transform
+
+
+def get_spatial_transform(n):
     transform = va.SomeOf([
         va.RandomRotate(degrees=20), #andomly rotates the video with a degree randomly choosen from [-10, 10]  
         va.HorizontalFlip(),# horizontally flip the video with 100% probability
@@ -69,20 +87,19 @@ def get_video_transform(n):
         va.Pepper(),
         va.PiecewiseAffineTransform(0.3,0.3,0.3),
         va.Salt(),
-#         va.TemporalRandomCrop(size=16),
-#         va.TemporalElasticTransformation(),
-#         va.InverseOrder(),
     ], N=n)
     return transform
 
 
-def get_df(df, seq_length, valid=False):
+def get_df(df, seq_length, valid=False, test=False):
     #df = pd.read_csv('../important_csvs/events_with_number_of_frames_stratified.csv')
     df_new = df[df.number_of_frames>=seq_length]
-    if valid:
+    if test:
         df_new = df_new[df_new.fold==0]
+    if valid:
+        df_new = df_new[df_new.fold==1]
     else:
-        df_new = df_new[df_new.fold!=0]
+        df_new = df_new[df_new['fold'].isin([2,3,4])]
     return df_new
 
 
@@ -108,12 +125,13 @@ def get_indices(df):
     return class_image_paths, end_idx
 
 
-def get_loader(seq_length, bs, end_idx, class_image_paths, transform, tensor_transform, lstm, oned):
+def get_loader(seq_length, bs, end_idx, class_image_paths, transform, spat_transform, tensor_transform, lstm, oned):
     sampler = MySampler(end_idx, seq_length)
     dataset = MyDataset(
         image_paths = class_image_paths,
         seq_length = seq_length,
         transform = transform,
+        spat_transform = spat_transform,
         tensor_transform = tensor_transform,
         length = len(sampler),
         lstm = lstm,
