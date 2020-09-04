@@ -207,7 +207,7 @@ def nsea_compute_thresholds(y):
     return result
 
 
-def train_model_yo(save_path, dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=6):
+def train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=6):
     #liveloss = PlotLosses()
     model = model.to(device)
     val_loss = 100
@@ -288,7 +288,7 @@ def train_model_yo(save_path, dataloaders, device, model, criterion, optimizer, 
                                 'val_loss': epoch_loss,
                                 'epoch': epoch,  }
                     
-                    torch.save(states, save_file_path)
+                    torch.save(states, save_path)
                     for path in sorted(glob(f'{save_model_path}/best-checkpoint-*epoch.pth'))[:-3]:
                         os.remove(path)
                 
