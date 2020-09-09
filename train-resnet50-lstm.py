@@ -9,16 +9,19 @@ sys.path.append('../video-classification/ResNetCRNN/')
 from helpers_lstm import *
 
 tensor_transform = get_tensor_transform('ImageNet')
-train_transform = get_video_transform(2)
-valid_transform = get_video_transform(0)
-df = pd.read_csv('./important_csvs/events_with_number_of_frames_stratified.csv')
-df = get_df(df, 16, False)
+train_spat_transform = get_spatial_transform(2)
+train_temp_transform = get_temporal_transform()
+valid_spat_transform = get_spatial_transform(0)
+valid_temp_transform = va.TemporalFit(size=16)
+
+df = pd.read_csv('./important_csvs/events_with_number_of_frames_stratified_less_exp.csv')
+df = get_df(df, 50, False, True, False)
 class_image_paths, end_idx = get_indices(df)
-train_loader = get_loader(16, 4, end_idx, class_image_paths, train_transform, tensor_transform, True, False)
-df = pd.read_csv('./important_csvs/events_with_number_of_frames_stratified.csv')
-df = get_df(df, 16, True)
+train_loader = get_loader(16, 4, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, True, False)
+df = pd.read_csv('./important_csvs/events_with_number_of_frames_stratified_less_exp.csv')
+df = get_df(df, 50, False, False, True)
 class_image_paths, end_idx = get_indices(df)
-valid_loader = get_loader(16, 4, end_idx, class_image_paths, valid_transform, tensor_transform, True, False)
+valid_loader = get_loader(16, 4, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, True, False)
 
 device = torch.device('cuda')
 cnn_encoder = ResCNNEncoder().to(device)
@@ -53,4 +56,4 @@ dataloaders = {
 }
 save_model_path = '/media/raid/astamoulakatos/saved-lstm-models/'
 
-train_model(dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=epochs)
+train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=epochs)
