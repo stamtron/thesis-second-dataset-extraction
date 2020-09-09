@@ -1,3 +1,4 @@
+from barbar import Bar
 from torchsummaryX import summary
 import pickle
 from livelossplot import PlotLosses
@@ -155,8 +156,8 @@ def load_model(bs):
 def parallelize_model(cnn_encoder, rnn_decoder):
     if torch.cuda.device_count() > 1:
         print("Using", torch.cuda.device_count(), "GPUs!")
-        cnn_encoder = nn.DataParallel(cnn_encoder, device_ids=[0,1])
-        rnn_decoder = nn.DataParallel(rnn_decoder, device_ids=[0,1])
+        cnn_encoder = nn.DataParallel(cnn_encoder, device_ids=[0]) #1
+        rnn_decoder = nn.DataParallel(rnn_decoder, device_ids=[0]) #1
         # Combine all EncoderCNN + DecoderRNN parameters
         crnn_params = list(cnn_encoder.parameters()) + list(rnn_decoder.parameters())
 #         crnn_params = list(cnn_encoder.resnet[8].parameters()) + list(cnn_encoder.headbn1.parameters()) + list(cnn_encoder.fc1.parameters()) + list(rnn_decoder.parameters())    
@@ -249,7 +250,7 @@ def validation(cnn_encoder, rnn_decoder, device, criterion, valid_loader, optimi
     return result
 
 
-def train_model(dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=6):
+def train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=6):
     #liveloss = PlotLosses()
     model = model.to(device)
     val_loss = 100
@@ -272,13 +273,13 @@ def train_model(dataloaders, device, model, criterion, optimizer, scheduler, num
             running_acc = 0.0  
             running_f1 = 0.0
             #train_result = []
-
-            for inputs, labels in dataloaders[phase]:
+            for counter, (inputs, labels) in enumerate(Bar(dataloaders[phase])):
                 inputs = inputs.to(device)
                 labels = labels.to(device)
-
-                outputs = model(inputs)
-                loss = criterion(outputs, labels)
+                
+                with torch.set_grad_enabled(phase == 'train'):
+                    outputs = model(inputs)
+                    loss = criterion(outputs, labels)
 
                 if phase == 'train':
                     optimizer.zero_grad()
@@ -293,6 +294,18 @@ def train_model(dataloaders, device, model, criterion, optimizer, scheduler, num
                 running_acc += accuracy_score(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
                 running_f1 += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="samples")  *  inputs.size(0)
            
+                if (counter!=0) and (counter%400==0):
+                    if phase == 'train':
+                        result = '  Training Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(running_loss/(inputs.size(0)*counter),
+                                                                                         running_acc/(inputs.size(0)*counter),
+                                                                                         running_f1/(inputs.size(0)*counter))
+                        print(result)
+                    if phase == 'validation':
+                        result = '  Validation Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(running_loss/(inputs.size(0)*counter),
+                                                                                         running_acc/(inputs.size(0)*counter),
+                                                                                         running_f1/(inputs.size(0)*counter))
+                        print(result)
+                        
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
             epoch_acc = running_acc / len(dataloaders[phase].dataset)
             epoch_f1 = running_f1 / len(dataloaders[phase].dataset)
@@ -318,7 +331,7 @@ def train_model(dataloaders, device, model, criterion, optimizer, scheduler, num
                                 'val_loss': epoch_loss,
                                 'epoch': epoch,  }
                     
-                    torch.save(states, save_file_path)
+                    torch.save(states, save_path)
                     for path in sorted(glob(f'{save_model_path}/best-checkpoint-*epoch.pth'))[:-3]:
                         os.remove(path)
                 
@@ -328,15 +341,15 @@ def train_model(dataloaders, device, model, criterion, optimizer, scheduler, num
             
 #         liveloss.update(logs)
 #         liveloss.send()
-        with open("cnnlstm_val_losses.txt", "wb") as fp:   #Pickling
+        with open("resnet_lstm_val_losses.txt", "wb") as fp:   #Pickling
             pickle.dump(val_losses, fp)
-        with open("cnnlstm_val_acc.txt", "wb") as fp:   #Pickling
+        with open("resnet_lstm_val_acc.txt", "wb") as fp:   #Pickling
             pickle.dump(val_acc, fp)
-        with open("cnnlstm_val_f1.txt", "wb") as fp:   #Pickling
+        with open("resnet_lstm_val_f1.txt", "wb") as fp:   #Pickling
             pickle.dump(val_f1, fp)
-        with open("cnnlstm_train_losses.txt", "wb") as fp:   #Pickling
+        with open("resnet_lstm_train_losses.txt", "wb") as fp:   #Pickling
             pickle.dump(train_losses, fp)
-        with open("cnnlstm_train_acc.txt", "wb") as fp:   #Pickling
+        with open("resnet_lstm_train_acc.txt", "wb") as fp:   #Pickling
             pickle.dump(train_acc, fp)
-        with open("cnnlstm_train_f1.txt", "wb") as fp:   #Pickling
+        with open("resnet_lstm_train_f1.txt", "wb") as fp:   #Pickling
             pickle.dump(train_f1, fp)
