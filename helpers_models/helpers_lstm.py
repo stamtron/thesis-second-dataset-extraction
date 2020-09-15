@@ -324,7 +324,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 
                 if epoch_loss < val_loss:
                     val_loss = epoch_loss
-                    save_path = f'{save_model_path}/best-checkpoint-{str(epoch).zfill(3)}epoch.pth'
+                    save_path = f'{save_model_path}best-checkpoint-{str(epoch).zfill(3)}epoch.pth'
                     states = {  'model_state_dict': model.state_dict(),
                                 'optimizer_state_dict': optimizer.state_dict(),
                                 'scheduler_state_dict': scheduler.state_dict(),
@@ -332,7 +332,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                                 'epoch': epoch,  }
                     
                     torch.save(states, save_path)
-                    for path in sorted(glob(f'{save_model_path}/best-checkpoint-*epoch.pth'))[:-3]:
+                    for path in sorted(glob.glob(f'{save_model_path}best-checkpoint-*epoch.pth'))[:-3]:
                         os.remove(path)
                 
 #             logs[prefix + 'log loss'] = epoch_loss.item()

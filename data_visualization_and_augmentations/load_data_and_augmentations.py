@@ -46,7 +46,7 @@ def get_tensor_transform(finetuned_dataset, resize = False):
             vidNormalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ]
         if resize:
-            video_transform_list.insert(0,vidResize((288,352))
+            video_transform_list.insert(0,vidResize((288,352)))
     if finetuned_dataset == 'Kinetics':
         norm_value=255
         video_transform_list = [
@@ -89,7 +89,7 @@ def get_spatial_transform(n):
         #va.Superpixel(0.2,2),
         va.OneOf([
             va.Multiply(2.0),
-            va.Mulitply(0.5),
+            va.Multiply(0.5),
         ]),
         va.Add(10),
         va.Pepper(),
