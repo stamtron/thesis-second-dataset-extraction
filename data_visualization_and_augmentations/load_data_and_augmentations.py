@@ -18,6 +18,7 @@ sys.path.append('../../torch_videovision/')
 
 from torchvideotransforms.video_transforms import Compose as vidCompose
 from torchvideotransforms.video_transforms import Normalize as vidNormalize
+from torchvideotransforms.video_transforms import Resize as vidResize
 from torchvideotransforms.volume_transforms import ClipToTensor
 
 import vidaug.augmentors as va
@@ -38,12 +39,14 @@ from new_dataloader import *
 #                 title = class_names[i]
 #         imshow(out, title=title)
 
-def get_tensor_transform(finetuned_dataset):
+def get_tensor_transform(finetuned_dataset, resize = False):
     if finetuned_dataset == 'ImageNet':
         video_transform_list = [
             ClipToTensor(channel_nb=3),
             vidNormalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ]
+        if resize:
+            video_transform_list.insert(0,vidResize((288,352))
     if finetuned_dataset == 'Kinetics':
         norm_value=255
         video_transform_list = [
@@ -52,6 +55,8 @@ def get_tensor_transform(finetuned_dataset):
             96.29023126 / norm_value], std=[38.7568578 / norm_value, 37.88248729 / norm_value,
         40.02898126 / norm_value]),
         ]
+        if resize:
+            video_transform_list.insert(0,vidResize((288,352)))
     tensor_transform = vidCompose(video_transform_list)
     return tensor_transform
 
@@ -82,7 +87,10 @@ def get_spatial_transform(n):
         va.GaussianBlur(sigma=0.1),
         va.InvertColor(),
         #va.Superpixel(0.2,2),
-        va.Multiply(2.0),
+        va.OneOf([
+            va.Multiply(2.0),
+            va.Mulitply(0.5),
+        ]),
         va.Add(10),
         va.Pepper(),
         va.PiecewiseAffineTransform(0.3,0.3,0.3),
