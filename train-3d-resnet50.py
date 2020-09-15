@@ -14,7 +14,7 @@ options = {
     "n_classes": 400,
     "n_finetune_classes": 5,
     "resnet_shortcut": 'B',
-    "sample_size": (576,704),
+    "sample_size": (288,352), #(576,704),
     "sample_duration": 16,
     "pretrain_path": '../3D-ResNets-PyTorch/resnet-50-kinetics.pth',
     "no_cuda": False,
@@ -47,18 +47,18 @@ for param in model.module.avgpool.parameters():
 for param in model.module.fc.parameters():
     param.requires_grad = True
     
-tensor_transform = get_tensor_transform('Kinetics')
+tensor_transform = get_tensor_transform('Kinetics', True)
 train_spat_transform = get_spatial_transform(2)
 train_temp_transform = get_temporal_transform()
 valid_spat_transform = get_spatial_transform(0)
 valid_temp_transform = va.TemporalFit(size=16)
 
-df = pd.read_csv('./important_csvs/events_with_number_of_frames_stratified_less_exp.csv')
-df = get_df(df, 50, False, True, False)
+df = pd.read_csv('./small_dataset_csvs/events_with_number_of_frames_stratified.csv')
+df = get_df(df, 20, True, False, False)
 class_image_paths, end_idx = get_indices(df)
 train_loader = get_loader(16, 4, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, False)
-df = pd.read_csv('./important_csvs/events_with_number_of_frames_stratified_less_exp.csv')
-df = get_df(df, 50, False, False, True)
+df = pd.read_csv('./small_dataset_csvs/events_with_number_of_frames_stratified.csv')
+df = get_df(df, 20, False, True, False)
 class_image_paths, end_idx = get_indices(df)
 valid_loader = get_loader(16, 4, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False)
 
