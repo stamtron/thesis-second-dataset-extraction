@@ -112,7 +112,8 @@ def get_df(df, seq_length, train=False, valid=False, test=False):
 
 
 def get_indices(df):
-    root_dir = '/media/raid/astamoulakatos/nsea_frame_sequences/centre_Ch2/'
+    #root_dir = '/media/raid/astamoulakatos/nsea_frame_sequences/centre_Ch2/'
+    root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
     class_paths = [d.path for d in os.scandir(root_dir) if d.is_dir]
     class_names = ['exp_fs','bur','exp','exp_and','exp_fj']
     one_hot_classes = [[1,0,0,0,1],[0,1,0,0,0],[1,0,0,0,0],[1,0,0,1,0],[1,0,0,1,0]]
