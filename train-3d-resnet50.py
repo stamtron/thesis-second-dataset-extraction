@@ -7,6 +7,7 @@ sys.path.append('../3D-ResNets-PyTorch/')
 sys.path.append('./important_csvs/')
 
 from helpers_3d import *
+from helpers_training import *
 
 options = {
     "model_depth": 50,
@@ -38,14 +39,12 @@ head = head.to(device)
 model.module.avgpool = adaptive_pooling
 model.module.fc = head
 
-for param in model.parameters():
+for param in model.module.parameters():
     param.requires_grad = False
     
-for param in model.module.avgpool.parameters():
-    param.requires_grad = True
-    
-for param in model.module.fc.parameters():
-    param.requires_grad = True
+unfreeze(model.module ,0.3)
+
+check_freeze(model.module)
     
 tensor_transform = get_tensor_transform('Kinetics', True)
 train_spat_transform = get_spatial_transform(2)
@@ -53,17 +52,20 @@ train_temp_transform = get_temporal_transform()
 valid_spat_transform = get_spatial_transform(0)
 valid_temp_transform = va.TemporalFit(size=16)
 
+root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
 df = pd.read_csv('./small_dataset_csvs/events_with_number_of_frames_stratified.csv')
-df = get_df(df, 20, True, False, False)
-class_image_paths, end_idx = get_indices(df)
-train_loader = get_loader(16, 4, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, False)
-df = pd.read_csv('./small_dataset_csvs/events_with_number_of_frames_stratified.csv')
-df = get_df(df, 20, False, True, False)
-class_image_paths, end_idx = get_indices(df)
-valid_loader = get_loader(16, 4, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False)
+df_train = get_df(df, 20, True, False, False)
+class_image_paths, end_idx = get_indices(df_train, root_dir)
+train_loader = get_loader(16, 24, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, False)
+df_valid = get_df(df, 20, False, True, False)
+class_image_paths, end_idx = get_indices(df_valid, root_dir)
+valid_loader = get_loader(16, 24, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False)
+df_test = get_df(df, 20, False, False, True)
+class_image_paths, end_idx = get_indices(df_test, root_dir)
+test_loader = get_loader(16, 24, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False)
 
 lr = 6e-2
-epochs = 6
+epochs = 10
 optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-2)
 criterion = nn.BCEWithLogitsLoss()
 scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)

@@ -88,8 +88,8 @@ def get_spatial_transform(n):
         va.InvertColor(),
         #va.Superpixel(0.2,2),
         va.OneOf([
-            va.Multiply(2.0),
-            va.Multiply(0.5),
+            va.Multiply(1.5),
+            va.Multiply(0.75),
         ]),
         va.Add(10),
         va.Pepper(),
@@ -111,12 +111,13 @@ def get_df(df, seq_length, train=False, valid=False, test=False):
     return df_new
 
 
-def get_indices(df):
+def get_indices(df, root_dir):
     #root_dir = '/media/raid/astamoulakatos/nsea_frame_sequences/centre_Ch2/'
-    root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
+    #root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
+    root_dir = root_dir
     class_paths = [d.path for d in os.scandir(root_dir) if d.is_dir]
-    class_names = ['exp_fs','bur','exp','exp_and','exp_fj']
-    one_hot_classes = [[1,0,0,0,1],[0,1,0,0,0],[1,0,0,0,0],[1,0,0,1,0],[1,0,0,1,0]]
+    #class_names = ['exp_fs','bur','exp','exp_and','exp_fj']
+    #one_hot_classes = [[1,0,0,0,1],[0,1,0,0,0],[1,0,0,0,0],[1,0,0,1,0],[1,0,1,0,0]]
     class_image_paths = []
     end_idx = []
     for c, class_path in enumerate(class_paths):
@@ -124,9 +125,18 @@ def get_indices(df):
             if d.is_dir:
                 if d.path in df.event_path.values:
                     paths = sorted(glob.glob(os.path.join(d.path, '*.png')))
-                    # Add class idx to paths
-                    paths = [(p, one_hot_classes[c]) for p in paths]
-                    class_image_paths.extend(paths)
+                    if 'bur' in class_path:
+                        label = [0,1,0,0,0]
+                    if 'exp' in class_path:
+                        label = [1,0,0,0,0]
+                    if 'exp_fj' in class_path:
+                        label = [1,0,1,0,0]
+                    if 'exp_fs' in class_path:
+                        label = [1,0,0,0,1]
+                    if 'exp_and' in class_path:
+                        label = [1,0,0,1,0]
+                    new_paths = [(p, label) for p in paths]
+                    class_image_paths.extend(new_paths)
                     end_idx.extend([len(paths)])
                     
     end_idx = [0, *end_idx]
@@ -168,3 +178,17 @@ def show_one_batch(loader):
         if np.array_equal(classes[0].numpy(), np.asarray(f)):
             title = class_names[i]
     imshow(out, title=title)
+    
+def show_batch(loader, bs):
+    class_names = ['exp_and','exp_fs','exp','exp_fj','bur']
+    one_hot_classes = [[1,0,0,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,1,0,0],[0,1,0,0,0]]
+    inputs, classes = next(iter(loader))
+    inputs = inputs.permute(0,2,1,3,4)
+    inputs = inputs.squeeze(dim = 0)
+    for j in range(bs):
+        # Make a grid from batch
+        out = torchvision.utils.make_grid(inputs[j])
+        for i, f in enumerate(one_hot_classes):
+            if np.array_equal(classes[j].numpy(), np.asarray(f)):
+                title = class_names[i]
+        imshow(out, title=title)
