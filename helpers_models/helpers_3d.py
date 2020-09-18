@@ -125,7 +125,7 @@ def load_data(df, bs, seq_length):
 
 def show_batch(loader, bs):
     class_names = ['exp_and','exp_fs','exp','exp_fj','bur']
-    one_hot_classes = [[1,0,1,0,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,0,1,0],[0,1,0,0,0]]
+    one_hot_classes = [[1,0,0,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,1,0,0],[0,1,0,0,0]]
     inputs, classes = next(iter(loader))
     inputs = inputs.permute(0,2,1,3,4)
     inputs = inputs.squeeze(dim = 0)
