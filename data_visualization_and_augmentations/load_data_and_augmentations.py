@@ -85,7 +85,7 @@ def get_spatial_transform(n):
         va.HorizontalFlip(),# horizontally flip the video with 100% probability
         va.ElasticTransformation(0.1,0.1),
         va.GaussianBlur(sigma=0.1),
-        va.InvertColor(),
+        #va.InvertColor(),
         #va.Superpixel(0.2,2),
         va.OneOf([
             va.Multiply(1.5),

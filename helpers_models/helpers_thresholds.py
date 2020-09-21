@@ -4,9 +4,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import average_precision_score, precision_recall_curve, accuracy_score, recall_score, precision_score, f1_score
 from sklearn.metrics import multilabel_confusion_matrix, precision_recall_fscore_support
 import numpy as np
+import pandas as pd
 
 # we assume that y contains a tuple of y_pred and targets
-def nsea_compute_thresholds(y_true, y_pred):
+def nsea_compute_thresholds(y_true, y_pred, classes):
 #     y_pred = numpy.asarray(y[0])
 #     y_true = numpy.asarray(y[1])
     precisions = dict()
@@ -32,9 +33,9 @@ def nsea_compute_thresholds(y_true, y_pred):
         result[event_type] = opt_thres
     return result
 
-def new_compute_metrics(y_true, y_pred, thresholds):
-    y_pred = y_pred.numpy()
-    y_true = y_true.numpy()
+def new_compute_metrics(y_true, y_pred, thresholds, classes):
+    #y_pred = y_pred.numpy()
+    #y_true = y_true.numpy()
     th = np.array([thresholds[key] for key in thresholds])
     
     ## Apply digitisation on the outputs
