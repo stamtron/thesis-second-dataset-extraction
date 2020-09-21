@@ -39,12 +39,18 @@ head = head.to(device)
 model.module.avgpool = adaptive_pooling
 model.module.fc = head
 
-for param in model.module.parameters():
-    param.requires_grad = False
-    
-unfreeze(model.module ,0.3)
+load = True
+if load:
+    checkpoint = torch.load('/media/raid/astamoulakatos/saved-3d-models/best-checkpoint-009epoch.pth')
+    model.load_state_dict(checkpoint['model_state_dict'])
+    print('loading pretrained freezed model!')
 
-check_freeze(model.module)
+    for param in model.module.parameters():
+        param.requires_grad = False
+    
+    unfreeze(model.module ,0.4)
+
+    check_freeze(model.module)
     
 tensor_transform = get_tensor_transform('Kinetics', True)
 train_spat_transform = get_spatial_transform(2)
@@ -64,8 +70,8 @@ df_test = get_df(df, 20, False, False, True)
 class_image_paths, end_idx = get_indices(df_test, root_dir)
 test_loader = get_loader(16, 24, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False)
 
-lr = 6e-2
-epochs = 10
+lr = 1e-2
+epochs = 6
 optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-2)
 criterion = nn.BCEWithLogitsLoss()
 scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)
