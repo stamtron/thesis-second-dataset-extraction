@@ -1,0 +1,3 @@
+[submodule "ResNet3d"]
+	path = ResNet3d
+	url = ./ResNet3d/
