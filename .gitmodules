@@ -1,3 +1,6 @@
 [submodule "ResNet3d"]
 	path = ResNet3d
 	url = ./ResNet3d/
+[submodule "ResNetLSTM"]
+	path = ResNetLSTM
+	url = ./ResNetLSTM/
