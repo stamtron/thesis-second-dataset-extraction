@@ -41,7 +41,7 @@ model.module.fc = head
 
 load = True
 if load:
-    checkpoint = torch.load('/media/raid/astamoulakatos/saved-3d-models/best-checkpoint-004epoch.pth')
+    checkpoint = torch.load('/media/raid/astamoulakatos/saved-3d-models/third-round/best-checkpoint-007epoch.pth')
     model.load_state_dict(checkpoint['model_state_dict'])
     print('loading pretrained freezed model!')
 
@@ -49,7 +49,7 @@ if load:
         param.requires_grad = False
     
     # unfreeze 50% of the model
-    unfreeze(model.module ,0.5)
+    unfreeze(model.module , 1)
 
     check_freeze(model.module)
     
@@ -63,26 +63,26 @@ root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
 df = pd.read_csv('./small_dataset_csvs/events_with_number_of_frames_stratified.csv')
 df_train = get_df(df, 20, True, False, False)
 class_image_paths, end_idx = get_indices(df_train, root_dir)
-train_loader = get_loader(16, 16, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, False)
+train_loader = get_loader(16, 6, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, False)
 df_valid = get_df(df, 20, False, True, False)
 class_image_paths, end_idx = get_indices(df_valid, root_dir)
-valid_loader = get_loader(16, 16, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False)
+valid_loader = get_loader(16, 6, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False)
 df_test = get_df(df, 20, False, False, True)
 class_image_paths, end_idx = get_indices(df_test, root_dir)
-test_loader = get_loader(16, 16, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False)
+test_loader = get_loader(16, 6, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False)
 
 lr = 1e-2
-epochs = 8
+epochs = 10
 optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-2)
 criterion = nn.BCEWithLogitsLoss()
 scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)
 torch.cuda.empty_cache()
 
 if load:
-    epochs = 8
+    epochs = 10
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-2)
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    lr = 1e-3
+    lr = 1e-4
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
     scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)
