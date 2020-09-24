@@ -156,8 +156,8 @@ def load_model(bs):
 def parallelize_model(cnn_encoder, rnn_decoder):
     if torch.cuda.device_count() > 1:
         print("Using", torch.cuda.device_count(), "GPUs!")
-        cnn_encoder = nn.DataParallel(cnn_encoder, device_ids=[0]) #1
-        rnn_decoder = nn.DataParallel(rnn_decoder, device_ids=[0]) #1
+        cnn_encoder = nn.DataParallel(cnn_encoder, device_ids=[0,1]) #1
+        rnn_decoder = nn.DataParallel(rnn_decoder, device_ids=[0,1]) #1
         # Combine all EncoderCNN + DecoderRNN parameters
         crnn_params = list(cnn_encoder.parameters()) + list(rnn_decoder.parameters())
 #         crnn_params = list(cnn_encoder.resnet[8].parameters()) + list(cnn_encoder.headbn1.parameters()) + list(cnn_encoder.fc1.parameters()) + list(rnn_decoder.parameters())    
@@ -294,7 +294,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 running_acc += accuracy_score(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
                 running_f1 += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="samples")  *  inputs.size(0)
            
-                if (counter!=0) and (counter%400==0):
+                if (counter!=0) and (counter%50==0):
                     if phase == 'train':
                         result = '  Training Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(running_loss/(inputs.size(0)*counter),
                                                                                          running_acc/(inputs.size(0)*counter),
