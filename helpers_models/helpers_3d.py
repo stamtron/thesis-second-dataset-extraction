@@ -1,3 +1,4 @@
+from torch.utils.tensorboard import SummaryWriter
 from barbar import Bar
 from torchsummaryX import summary
 import pickle
@@ -138,7 +139,7 @@ def show_batch(loader, bs):
         imshow(out, title=title)
         
         
-def train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=6):
+def train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, num_epochs=6):
     #liveloss = PlotLosses()
     model = model.to(device)
     val_loss = 100
@@ -182,17 +183,36 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 running_acc += accuracy_score(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
                 running_f1 += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="samples")  *  inputs.size(0)
            
-                if (counter!=0) and (counter%200==0):
+                if (counter!=0) and (counter%50==0):
                     if phase == 'train':
                         result = '  Training Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(running_loss/(inputs.size(0)*counter),
                                                                                          running_acc/(inputs.size(0)*counter),
                                                                                          running_f1/(inputs.size(0)*counter))
                         print(result)
+                        writer.add_scalar('training loss',
+                                        running_loss/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training acc',
+                                        running_acc/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training f1',
+                                        running_f1/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        
                     if phase == 'validation':
                         result = '  Validation Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(running_loss/(inputs.size(0)*counter),
                                                                                          running_acc/(inputs.size(0)*counter),
                                                                                          running_f1/(inputs.size(0)*counter))
                         print(result)
+                        writer.add_scalar('validation loss',
+                                        running_loss/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation acc',
+                                        running_acc/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation f1',
+                                        running_f1/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
                         
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
             epoch_acc = running_acc / len(dataloaders[phase].dataset)

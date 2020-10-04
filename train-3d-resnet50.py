@@ -39,7 +39,7 @@ head = head.to(device)
 model.module.avgpool = adaptive_pooling
 model.module.fc = head
 
-load = True
+load = False
 if load:
     checkpoint = torch.load('/media/raid/astamoulakatos/saved-3d-models/fifth-round-full-resolution/best-checkpoint-009epoch.pth')
     model.load_state_dict(checkpoint['model_state_dict'])
@@ -96,7 +96,8 @@ dataloaders = {
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 save_model_path = '/media/raid/astamoulakatos/saved-3d-models/'
 #device = torch.device('cuda')
-
-train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=epochs)
+writer = SummaryWriter('runs/ResNet3D_experiment')
+train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, num_epochs=epochs)
+writer.close()
 
 
