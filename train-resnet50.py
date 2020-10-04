@@ -57,5 +57,6 @@ dataloaders = {
 }
 save_model_path = '/media/raid/astamoulakatos/saved-resnet-models/'
 device = torch.device('cuda')
-
-train_model_yo(save_model_path, dataloaders, device, resnet, criterion, optimizer, scheduler, num_epochs=6)
+writer = SummaryWriter('runs/ResNet3D_experiment')
+train_model_yo(save_model_path, dataloaders, device, resnet, criterion, optimizer, scheduler, writer, num_epochs=6)
+writer.close()
