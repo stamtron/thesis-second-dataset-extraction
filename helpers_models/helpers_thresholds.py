@@ -33,6 +33,17 @@ def nsea_compute_thresholds(y_true, y_pred, classes):
         result[event_type] = opt_thres
     return result
 
+
+def compute_label_metrics(y_true, y_pred, threshold, classes):
+    for idx, event_type in enumerate(classes):
+        y_pred[:,idx] = np.where(y_pred[:,idx] >= threshold, 1, 0)
+    acc = []
+    for idx, event in enumerate(classes):
+        acc.append(accuracy_score(y_true[:,idx], y_pred[:, idx]))
+    acc = np.array(acc) 
+    precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred)
+    return acc, f1
+
 def new_compute_metrics(y_true, y_pred, thresholds, classes):
     #y_pred = y_pred.numpy()
     #y_true = y_true.numpy()
