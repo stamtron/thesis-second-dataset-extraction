@@ -51,10 +51,18 @@ test_loader = get_loader(1, 270, end_idx, class_image_paths, valid_temp_transfor
 
 torch.cuda.empty_cache()
 
+load = True
+if load:
+    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-resnet-models/best-checkpoint-002epoch.pth')
+    resnet.load_state_dict(checkpoint['model_state_dict'])
+    print('loading pretrained freezed model!')
+
 lr = 1e-2
 epochs = 10
 optimizer = optim.AdamW(resnet.parameters(), lr=lr, weight_decay=1e-2)
-criterion = nn.BCEWithLogitsLoss()
+pos_wei = torch.tensor([100/46.9, 100/12.2, 100/16, 100/10.8, 100/14.1])
+pos_wei = pos_wei.cuda()
+criterion = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
 scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)
 
 dataloaders = {
@@ -64,6 +72,6 @@ dataloaders = {
 
 save_model_path = '/media/scratch/astamoulakatos/saved-resnet-models/'
 device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet2D_vol3')
+writer = SummaryWriter('runs/ResNet2D_vol4')
 train_model_yo(save_model_path, dataloaders, device, resnet, criterion, optimizer, scheduler, writer, epochs)
 writer.close()
