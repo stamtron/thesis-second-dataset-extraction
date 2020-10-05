@@ -241,6 +241,13 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
+                    no_of_classes = 5
+                    beta = 0.99
+                    wei = CB_weights(labels, samples_per_cls, no_of_classes, beta)
+                    wei = wei.to(device)
+                    pos_wei = torch.tensor([100/46.9, 100/12.2, 100/16, 100/10.8, 100/14.1])
+                    pos_wei = pos_wei.to(device)
+                    criterion = nn.BCEWithLogitsLoss(weight = wei, pos_weight = pos_wei)
                     loss = criterion(outputs, labels)
 
                 if phase == 'train':
