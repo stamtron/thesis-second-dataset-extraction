@@ -62,8 +62,8 @@ dataloaders = {
     "validation": valid_loader
 }
 
-save_model_path = '/media/raid/astamoulakatos/saved-resnet-models/'
+save_model_path = '/media/scratch/astamoulakatos/saved-resnet-models/'
 device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet2D_vol2')
+writer = SummaryWriter('runs/ResNet2D_vol3')
 train_model_yo(save_model_path, dataloaders, device, resnet, criterion, optimizer, scheduler, writer, epochs)
 writer.close()
