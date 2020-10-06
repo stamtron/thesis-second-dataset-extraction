@@ -26,7 +26,7 @@ for param in resnet.avgpool.parameters():
 for param in resnet.fc.parameters():
     param.requires_grad = True
 
-#resnet = nn.DataParallel(resnet)
+resnet = nn.DataParallel(resnet)
 check_freeze(resnet)
 
 #summary(resnet.module, torch.zeros(2,3,576,704).cuda())
