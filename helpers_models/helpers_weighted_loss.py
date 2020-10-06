@@ -112,11 +112,11 @@ def CB_weights(labels, samples_per_cls, no_of_classes, beta):
     weights = (1.0 - beta) / np.array(effective_num)
     weights = weights / np.sum(weights) * no_of_classes
 
-    labels_one_hot = F.one_hot(labels, no_of_classes).float()
+    #labels_one_hot = F.one_hot(labels, no_of_classes).float()
 
     weights = torch.tensor(weights).float()
     weights = weights.unsqueeze(0)
-    weights = weights.repeat(labels_one_hot.shape[0],1) * labels_one_hot
+    weights = weights.repeat(labels.shape[0],1) * labels
     weights = weights.sum(1)
     weights = weights.unsqueeze(1)
     weights = weights.repeat(1,no_of_classes)

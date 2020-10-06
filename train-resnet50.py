@@ -26,8 +26,8 @@ for param in resnet.avgpool.parameters():
 for param in resnet.fc.parameters():
     param.requires_grad = True
 
-resnet = nn.DataParallel(resnet)
-check_freeze(resnet.module)
+#resnet = nn.DataParallel(resnet)
+check_freeze(resnet)
 
 #summary(resnet.module, torch.zeros(2,3,576,704).cuda())
 
@@ -41,17 +41,17 @@ root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
 df = pd.read_csv('./small_dataset_csvs/events_with_number_of_frames_stratified.csv')
 df_train = get_df(df, 20, True, False, False)
 class_image_paths, end_idx = get_indices(df_train, root_dir)
-train_loader = get_loader(1, 270, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, True)
+train_loader = get_loader(1, 128, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, True)
 df_valid = get_df(df, 20, False, True, False)
 class_image_paths, end_idx = get_indices(df_valid, root_dir)
-valid_loader = get_loader(1, 270, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True)
+valid_loader = get_loader(1, 128, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True)
 df_test = get_df(df, 20, False, False, True)
 class_image_paths, end_idx = get_indices(df_test, root_dir)
-test_loader = get_loader(1, 270, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True)
+test_loader = get_loader(1, 64, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True)
 
 torch.cuda.empty_cache()
 
-load = True
+load = False
 if load:
     checkpoint = torch.load('/media/scratch/astamoulakatos/saved-resnet-models/best-checkpoint-002epoch.pth')
     resnet.load_state_dict(checkpoint['model_state_dict'])
@@ -70,8 +70,8 @@ dataloaders = {
     "validation": valid_loader
 }
 
-save_model_path = '/media/scratch/astamoulakatos/saved-resnet-models/'
+save_model_path = '/media/raid/astamoulakatos/saved-resnet-models/'
 device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet2D_vol4')
+writer = SummaryWriter('runs/ResNet2D_vol5')
 train_model_yo(save_model_path, dataloaders, device, resnet, criterion, optimizer, scheduler, writer, epochs)
 writer.close()

@@ -238,13 +238,15 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
             #train_result = []
             for counter, (inputs, labels) in enumerate(Bar(dataloaders[phase])):
                 inputs = inputs.to(device)
+                lab = labels
                 labels = labels.to(device)
                 
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
                     no_of_classes = 5
                     beta = 0.99
-                    wei = CB_weights(labels, samples_per_cls, no_of_classes, beta)
+                    samples_per_cls = [46.9, 12.2, 16, 10.8, 14.1]
+                    wei = CB_weights(lab, samples_per_cls, no_of_classes, beta)
                     wei = wei.to(device)
                     pos_wei = torch.tensor([100/46.9, 100/12.2, 100/16, 100/10.8, 100/14.1])
                     pos_wei = pos_wei.to(device)
