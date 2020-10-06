@@ -79,7 +79,7 @@ def new_compute_metrics(y_true, y_pred, thresholds):
     
     res_labels = pd.concat([res_labels, pd.DataFrame(cmm, columns=['tn', 'fp', 'fn', 'tp'])], axis=1)
     
-    agg_precision, agg_recall, agg_f1, agg_support = precision_recall_fscore_support(y_true, y_pred, average='micro')
+    agg_precision, agg_recall, agg_f1, agg_support = precision_recall_fscore_support(y_true, y_pred, average='samples')
     agg=pd.DataFrame({'Event': ['Aggregate'], 'Threshold': [np.nan], 'Exact Matching Score': agg_acc, 'Precision': agg_precision, 'Recall': agg_recall, 'F1-Score': agg_f1})
     
     
@@ -174,9 +174,10 @@ def load_data(df, bs, seq_length):
 
 def show_batch(loader, bs):
     class_names = ['exp_and','exp_fs','exp','exp_fj','bur']
-    one_hot_classes = [[1,0,1,0,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,0,1,0],[0,1,0,0,0]]
+    one_hot_classes = [[1,0,0,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,1,0,0],[0,1,0,0,0]]
     inputs, classes = next(iter(loader))
-    inputs = inputs.squeeze(dim = 1)
+    inputs = inputs.permute(0,2,1,3,4)
+    #inputs = inputs.squeeze(dim = 0)
     for j in range(bs):
         # Make a grid from batch
         out = torchvision.utils.make_grid(inputs[j])
@@ -184,6 +185,19 @@ def show_batch(loader, bs):
             if np.array_equal(classes[j].numpy(), np.asarray(f)):
                 title = class_names[i]
         imshow(out, title=title)
+        
+# def show_batch(loader, bs):
+#     class_names = ['exp_and','exp_fs','exp','exp_fj','bur']
+#     one_hot_classes = [[1,0,1,0,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,0,1,0],[0,1,0,0,0]]
+#     inputs, classes = next(iter(loader))
+#     inputs = inputs.squeeze(dim = 1)
+#     for j in range(bs):
+#         # Make a grid from batch
+#         out = torchvision.utils.make_grid(inputs[j])
+#         for i, f in enumerate(one_hot_classes):
+#             if np.array_equal(classes[j].numpy(), np.asarray(f)):
+#                 title = class_names[i]
+#         imshow(out, title=title)
         
 # we assume that y contains a tuple of y_pred and targets
 def nsea_compute_thresholds(y):
