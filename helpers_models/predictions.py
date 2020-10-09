@@ -26,7 +26,7 @@ def imshow(inp, title=None):
     plt.figure(figsize=(30,30))
     plt.imshow(inp)
     if title is not None:
-        plt.title(title, fontsize=40)
+        plt.title(title, fontsize=30)
     plt.pause(0.001)  # pause a bit so that plots are updated 
 
 
@@ -52,7 +52,6 @@ def plot_predictions_actuals(loader, bs, net, device):
     X, y = next(iter(loader))
     X = X.to(device)
     y = Variable(y.float()).to(device) 
-    #X = X.permute(0,2,1,3,4)
     y = y.squeeze(dim=1)
     y = y.float()
     output = net(X)
@@ -61,6 +60,8 @@ def plot_predictions_actuals(loader, bs, net, device):
     preds = torch.sigmoid(output)
     preds = preds.to(torch.float32) 
     preds = preds.detach().cpu()
+    if X.ndim == 5:
+        X = X.permute(0,2,1,3,4)
     for j in range(bs):
         # Make a grid from batch
         out = torchvision.utils.make_grid(X[j])
