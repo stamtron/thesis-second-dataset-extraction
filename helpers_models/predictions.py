@@ -46,7 +46,7 @@ def show_batch(loader, bs):
     #return title
 
 
-def plot_predictions_actuals(loader, bs, net, device):
+def plot_predictions_actuals(loader, bs, net, device, resnet3d = False):
     class_names = ['exp_and','exp_fs','exp','exp_fj','bur']
     one_hot_classes = [[1,0,0,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,1,0,0],[0,1,0,0,0]]
     X, y = next(iter(loader))
@@ -60,8 +60,9 @@ def plot_predictions_actuals(loader, bs, net, device):
     preds = torch.sigmoid(output)
     preds = preds.to(torch.float32) 
     preds = preds.detach().cpu()
-    if X.ndim == 5:
-        X = X.permute(0,2,1,3,4)
+    if resnet3d:
+        if X.ndim == 5:
+            X = X.permute(0,2,1,3,4)
     for j in range(bs):
         # Make a grid from batch
         out = torchvision.utils.make_grid(X[j])
