@@ -21,7 +21,7 @@ def parse_img_num(img):
     
     
 def imshow(inp, title=None):
-    inp = inp.numpy().transpose((1, 2, 0))
+    inp = inp.cpu().numpy().transpose((1, 2, 0))
     mean = np.array([0.485, 0.456, 0.406])
     std = np.array([0.229, 0.224, 0.225])
     inp = std * inp + mean
@@ -29,8 +29,25 @@ def imshow(inp, title=None):
     plt.figure(figsize=(30,30))
     plt.imshow(inp)
     if title is not None:
-        plt.title(title)
-    plt.pause(0.001)  # pause a bit so that plots are updated    
+        plt.title(title, fontsize=30)
+    plt.pause(0.001)  # pause a bit so that plots are updated 
+
+
+def show_batch(loader, bs, resnet3d=False):
+    class_names = ['exp_and','exp_fs','exp','exp_fj','bur']
+    one_hot_classes = [[1,0,0,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,1,0,0],[0,1,0,0,0]]
+    inputs, classes = next(iter(loader))
+    if resnet3d:
+        if inputs.ndim == 5:
+            inputs = inputs.permute(0,2,1,3,4)
+    for j in range(bs):
+        # Make a grid from batch
+        out = torchvision.utils.make_grid(inputs[j])
+        for i, f in enumerate(one_hot_classes):
+            if np.array_equal(classes[j].numpy(), np.asarray(f)):
+                title = class_names[i]
+        imshow(out, title=title)
+    #return title   
     
     
 class MySampler(torch.utils.data.Sampler):
