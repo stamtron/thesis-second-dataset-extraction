@@ -25,19 +25,6 @@ import vidaug.augmentors as va
 
 from new_dataloader import *
 
-# def show_batch_yo(loader, bs):
-#     class_names = ['exp_and','exp_fs','exp','exp_fj','bur']
-#     one_hot_classes = [[1,0,1,0,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,0,1,0],[0,1,0,0,0]]
-#     inputs, classes = next(iter(loader))
-#     inputs = inputs.permute(0,2,1,3,4)
-#     inputs = inputs.squeeze(dim = 0)
-#     for j in range(bs):
-#         # Make a grid from batch
-#         out = torchvision.utils.make_grid(inputs[j])
-#         for i, f in enumerate(one_hot_classes):
-#             if np.array_equal(classes[j].numpy(), np.asarray(f)):
-#                 title = class_names[i]
-#         imshow(out, title=title)
 
 def get_tensor_transform(finetuned_dataset, resize = False):
     if finetuned_dataset == 'ImageNet':
@@ -163,32 +150,3 @@ def get_loader(seq_length, bs, end_idx, class_image_paths, temp_transform, spat_
         num_workers = 0)
     return loader
 
-
-def show_one_batch(loader):
-    # Get a batch of training data
-    inputs, classes = next(iter(loader))
-    inputs = inputs.permute(0,2,1,3,4)
-    inputs = inputs.squeeze(dim = 0)
-
-    # Make a grid from batch
-    class_names = ['exp_fs','bur','exp','exp_and','exp_fj']
-    one_hot_classes = [[1,0,0,0,1],[0,1,0,0,0],[1,0,0,0,0],[1,0,0,1,0],[1,0,0,1,0]]
-    out = torchvision.utils.make_grid(inputs)
-    for i, f in enumerate(one_hot_classes):
-        if np.array_equal(classes[0].numpy(), np.asarray(f)):
-            title = class_names[i]
-    imshow(out, title=title)
-    
-def show_batch(loader, bs):
-    class_names = ['exp_and','exp_fs','exp','exp_fj','bur']
-    one_hot_classes = [[1,0,0,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,1,0,0],[0,1,0,0,0]]
-    inputs, classes = next(iter(loader))
-    inputs = inputs.permute(0,2,1,3,4)
-    inputs = inputs.squeeze(dim = 0)
-    for j in range(bs):
-        # Make a grid from batch
-        out = torchvision.utils.make_grid(inputs[j])
-        for i, f in enumerate(one_hot_classes):
-            if np.array_equal(classes[j].numpy(), np.asarray(f)):
-                title = class_names[i]
-        imshow(out, title=title)
