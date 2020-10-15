@@ -9,6 +9,8 @@ sys.path.append('./important_csvs/')
 from helpers_3d import *
 from helpers_training import *
 from focal_loss_2 import *
+from load_data_and_augmentations import *
+from imbalanced_sampler_3 import MultilabelBalancedRandomSampler
 
 options = {
     "model_depth": 50,
@@ -31,7 +33,7 @@ myopts = opts(**options)
 model, parameters = generate_model(myopts)
 
 adaptive_pooling = AdaptiveConcatPool3d()
-os.environ['CUDA_VISIBLE_DEVICES']='0,1,2'
+os.environ['CUDA_VISIBLE_DEVICES']='0'
 #torch.cuda.empty_cache()
 device = torch.device('cuda') 
 head = Head()
@@ -72,22 +74,59 @@ train_temp_transform = get_temporal_transform()
 valid_spat_transform = get_spatial_transform(0)
 valid_temp_transform = va.TemporalFit(size=16)
 
-root_dir = '/media/scratch/astamoulakatos/centre_Ch2/'
+root_dir = '/media/raid/astamoulakatos/nsea_frame_sequences/centre_Ch2/'
 df = pd.read_csv('./important_csvs/more_balanced_dataset/more_balanced_stratified.csv')
+
+################################################################## Make function for that junk of code
 df_train = get_df(df, 50, True, False, False)
 class_image_paths, end_idx = get_indices(df_train, root_dir)
-train_loader = get_loader(16, 64, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, False)
+seq_length = 16
+indices = []
+for i in range(len(end_idx) - 1):
+    start = end_idx[i]
+    end = end_idx[i + 1] - seq_length
+    if start > end:
+        pass
+    else:
+        indices.append(torch.arange(start, end))
+indices = torch.cat(indices)
+indices = indices[torch.randperm(len(indices))]
+labels = []
+for i in class_image_paths:
+    labels.append(i[1])
+labels = np.array(labels)
+train_sampler = MultilabelBalancedRandomSampler(
+    labels, indices, class_choice="least_sampled"
+)
+dataset = MyDataset(
+        image_paths = class_image_paths,
+        seq_length = seq_length,
+        temp_transform = valid_temp_transform,
+        spat_transform = valid_spat_transform,
+        tensor_transform = tensor_transform,
+        length = len(train_sampler),
+        lstm = False,
+        oned = False)
+train_loader = DataLoader(
+        dataset,
+        batch_size = 20,
+        sampler = train_sampler,
+        drop_last = True,
+        num_workers = 0)
+##########################################################################################
+
+#train_loader = get_loader(16, 64, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, False)
 df_valid = get_df(df, 50, False, True, False)
 class_image_paths, end_idx = get_indices(df_valid, root_dir)
-valid_loader = get_loader(16, 64, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False)
+valid_loader = get_loader(16, 20, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False)
 df_test = get_df(df, 50, False, False, True)
 class_image_paths, end_idx = get_indices(df_test, root_dir)
-test_loader = get_loader(16, 64, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False)
+test_loader = get_loader(16, 20, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False)
 
 lr = 1e-2
 epochs = 10
 optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
-pos_wei = torch.tensor([1.5, 3.0, 6.5, 29.7, 4.7])
+pos_wei = torch.tensor([0.33, 3.0, 3.0, 3.0, 3.0])
 pos_wei = pos_wei.cuda()
 #criterion = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
 criterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
@@ -111,9 +150,9 @@ dataloaders = {
 }
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-save_model_path = '/media/scratch/astamoulakatos/saved-3d-models/'
+save_model_path = '/media/raid/astamoulakatos/saved-3d-models/'
 #device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet3D_focal_loss_more_balanced')
+writer = SummaryWriter('runs/ResNet3D_focal_loss_balanced_dataloader')
 train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, num_epochs=epochs)
 writer.close()
 
