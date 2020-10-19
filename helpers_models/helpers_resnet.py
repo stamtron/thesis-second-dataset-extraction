@@ -31,6 +31,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import average_precision_score, precision_recall_curve, accuracy_score, recall_score, precision_score, f1_score
 from sklearn.metrics import multilabel_confusion_matrix, precision_recall_fscore_support
 import tqdm
+from sklearn.metrics import hamming_loss
+from sklearn.metrics import zero_one_loss
 
 
 def nsea_compute_thresholds(y_true, y_pred):
@@ -247,6 +249,11 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
             running_loss = 0.0
             running_acc = 0.0  
             running_f1 = 0.0
+            running_f1_micro = 0.0
+            running_f1_macro = 0.0
+            running_zero_one = 0.0
+            running_hamming_loss = 0.0
+            running_loss_bce = 0.0
             y_true = []
             y_pred = []
             #train_result = []
@@ -257,16 +264,17 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
+                    loss = criterion(outputs, labels)
                     #no_of_classes = 5
                     #beta = 0.99
                    # samples_per_cls = [46.9, 12.2, 16, 10.8, 14.1]
                     #wei = CB_weights(lab, samples_per_cls, no_of_classes, beta)
                    # wei = wei.to(device)
-                    #pos_wei = torch.tensor([100/46.9, 100/12.2, 100/16, 100/10.8, 100/14.1])
-                    #pos_wei = pos_wei.to(device)
-                    #criterion = nn.BCEWithLogitsLoss(weight = wei, pos_weight = pos_wei)
-                    loss = criterion(outputs, labels)
-
+                    pos_wei = torch.tensor([1, 3, 3, 3, 3])
+                    pos_wei = pos_wei.to(device)
+                    criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
+                    loss_bce = criterion2(outputs, labels)
+        
                 if phase == 'train':
                     optimizer.zero_grad()
                     loss.backward()
@@ -283,10 +291,15 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 y_pred.append(pred)
                 y_true.append(y)
                 
+                running_loss_bce += loss_bce.item() * inputs.size(0)
                 running_loss += loss.item() * inputs.size(0)
                 running_acc += accuracy_score(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
                 running_f1 += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="samples")  *  inputs.size(0)
-           
+                running_zero_one += hamming_loss(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
+                running_hamming_loss += zero_one_loss(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
+                running_f1_micro += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="micro")  *  inputs.size(0)
+                running_f1_macro += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="macro")  *  inputs.size(0)
+                
                 if (counter!=0) and (counter%20==0):
                     if phase == 'train':
                         result = '  Training Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(running_loss/(inputs.size(0)*counter),
@@ -307,14 +320,29 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                         writer.add_scalar('training FJ f1', f1_labels[2], epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('training And f1', f1_labels[3], epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('training FS f1', f1_labels[4], epoch * len(dataloaders[phase]) + counter)
-                        writer.add_scalar('training loss',
+                        writer.add_scalar('training bce loss',
+                                        running_loss_bce/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training focal loss',
                                         running_loss/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('training acc',
                                         running_acc/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
-                        writer.add_scalar('training f1',
+                        writer.add_scalar('training f1 samples',
                                         running_f1/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training f1 micro',
+                                        running_f1_micro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training f1 macro',
+                                        running_f1_macro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training hamming loss',
+                                        running_hamming_loss/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training zero one loss',
+                                        running_zero_one/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('learning rate', lrate, epoch * len(dataloaders[phase]) + counter)
                         
@@ -326,14 +354,29 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                                                                                          running_acc/(inputs.size(0)*counter),
                                                                                          running_f1/(inputs.size(0)*counter))
                         print(result)
-                        writer.add_scalar('validation loss',
+                        writer.add_scalar('validation bce loss',
+                                        running_loss_bce/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation focal loss',
                                         running_loss/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('validation acc',
                                         running_acc/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
-                        writer.add_scalar('validation f1',
+                        writer.add_scalar('validation f1 samples',
                                         running_f1/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation f1 micro',
+                                        running_f1_micro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation f1 macro',
+                                        running_f1_macro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation hamming loss',
+                                        running_hamming_loss/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation zero one loss',
+                                        running_zero_one/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
                         
                         classes = ['Exposure', 'Burial', 'Field Joint', 'Anode', 'Free Span']
