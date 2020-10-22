@@ -41,7 +41,7 @@ valid_spat_transform = get_spatial_transform(0)
 valid_temp_transform = va.TemporalFit(size=16)
 
 root_dir = '/media/scratch/astamoulakatos/centre_Ch2/'
-df = pd.read_csv('./important_csvs/more_balanced_dataset/more_balanced_stratified.csv')
+df = pd.read_csv('./important_csvs/more_balanced_dataset/small_set_multi_class.csv')
 ###################################################################################
 df_train = get_df(df, 50, True, False, False)
 class_image_paths, end_idx = get_indices(df_train, root_dir)
@@ -59,7 +59,7 @@ indices = torch.cat(indices)
 indices = indices[torch.randperm(len(indices))]
 labels = []
 for i in class_image_paths:
-    labels.append(i[1])
+    labels.append(i[2])
 labels = np.array(labels)
 train_sampler = MultilabelBalancedRandomSampler(
     labels, indices, class_choice="least_sampled"
@@ -72,10 +72,11 @@ dataset = MyDataset(
         tensor_transform = tensor_transform,
         length = len(train_sampler),
         lstm = False,
-        oned = True)
+        oned = True,
+        augment = False)
 train_loader = DataLoader(
         dataset,
-        batch_size = 100,
+        batch_size = 30,
         sampler = train_sampler,
         drop_last = True,
         num_workers = 0)
@@ -83,23 +84,23 @@ train_loader = DataLoader(
 
 
 #######################################################################################
-df_valid = get_df(df, 50, False, True, False)
+df_valid = get_df(df, 50, True, False, False)
 class_image_paths, end_idx = get_indices(df_valid, root_dir)
-valid_loader = get_loader(1, 100, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True)
+valid_loader = get_loader(1, 30, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, False)
 df_test = get_df(df, 50, False, False, True)
 class_image_paths, end_idx = get_indices(df_test, root_dir)
-test_loader = get_loader(1, 50, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True)
+test_loader = get_loader(1, 50, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, False)
 
 torch.cuda.empty_cache()
 
 load = True
 if load:
-    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-resnet-models/forth-round-unfreezed/best-checkpoint-011epoch.pth')
+    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-resnet-models/best-checkpoint-000epoch.pth')
     resnet.load_state_dict(checkpoint['model_state_dict'])
     print('loading pretrained freezed model!')
     
     for param in resnet.module.parameters():
-        param.requires_grad = False
+        param.requires_grad = True
         
     for param in resnet.module.avgpool.parameters():
         param.requires_grad = True
@@ -112,7 +113,7 @@ if load:
 lr = 1e-2
 epochs = 15
 optimizer = optim.AdamW(resnet.parameters(), lr=lr, weight_decay=1e-2)
-pos_wei = torch.tensor([1, 3, 3, 3, 3])
+pos_wei = torch.tensor([1, 1, 1, 1, 1])
 pos_wei = pos_wei.cuda()
 #criterion = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
 criterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
@@ -135,6 +136,6 @@ if load:
     
 save_model_path = '/media/scratch/astamoulakatos/saved-resnet-models/'
 device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet2D_focal_loss_balanced_sampler_full_res')
+writer = SummaryWriter('runs/ResNet2D_focal_loss_overfit_unf')
 train_model_yo(save_model_path, dataloaders, device, resnet, criterion, optimizer, scheduler, writer, epochs)
 writer.close()

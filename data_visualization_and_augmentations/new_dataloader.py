@@ -72,7 +72,7 @@ class MySampler(torch.utils.data.Sampler):
     
     
 class MyDataset(Dataset):
-    def __init__(self, image_paths, seq_length, temp_transform, spat_transform, tensor_transform, length, lstm=False, oned = False): #csv_file, 
+    def __init__(self, image_paths, seq_length, temp_transform, spat_transform, tensor_transform, length, lstm=False, oned = False, augment = False): #csv_file, 
         self.image_paths = image_paths
         self.seq_length = seq_length
         self.temp_transform = temp_transform
@@ -81,6 +81,7 @@ class MyDataset(Dataset):
         self.length = length
         self.lstm = lstm
         self.oned = oned
+        self.augment = augment
         
     def __getitem__(self, index):
         start = index
@@ -96,7 +97,8 @@ class MyDataset(Dataset):
         x = images
         if not self.oned:
             x = self.temp_transform(x)
-        x = self.spat_transform(x)
+        if self.augment:
+            x = self.spat_transform(x)
         x = self.tensor_transform(x)
         y = torch.tensor([self.image_paths[start][1]], dtype=torch.long)
         y = y.squeeze(dim=0)

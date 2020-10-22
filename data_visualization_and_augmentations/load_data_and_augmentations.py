@@ -113,16 +113,21 @@ def get_indices(df, root_dir):
                 if d.path in df.event_path.values:
                     paths = sorted(glob.glob(os.path.join(d.path, '*.png')))
                     if 'bur' in class_path:
-                        label = [0,1,0,0,0]
+                        multi_label = [0,1,0,0,0]
+                        multi_class = [0,1,0,0,0]
                     if 'exp' in class_path:
-                        label = [1,0,0,0,0]
+                        multi_label = [1,0,0,0,0]
+                        multi_class = [1,0,0,0,0]
                     if 'exp_fj' in class_path:
-                        label = [1,0,1,0,0]
+                        multi_label = [1,0,1,0,0]
+                        multi_class = [0,0,1,0,0]
                     if 'exp_fs' in class_path:
-                        label = [1,0,0,0,1]
+                        multi_label = [1,0,0,0,1]
+                        multi_class = [0,0,0,0,1]
                     if 'exp_and' in class_path:
-                        label = [1,0,0,1,0]
-                    new_paths = [(p, label) for p in paths]
+                        multi_label = [1,0,0,1,0]
+                        multi_class = [0,0,0,1,0]
+                    new_paths = [(p, multi_label, multi_class) for p in paths]
                     class_image_paths.extend(new_paths)
                     end_idx.extend([len(paths)])
                     
@@ -131,7 +136,7 @@ def get_indices(df, root_dir):
     return class_image_paths, end_idx
 
 
-def get_loader(seq_length, bs, end_idx, class_image_paths, temp_transform, spat_transform, tensor_transform, lstm, oned):
+def get_loader(seq_length, bs, end_idx, class_image_paths, temp_transform, spat_transform, tensor_transform, lstm, oned, augment):
     sampler = MySampler(end_idx, seq_length)
     dataset = MyDataset(
         image_paths = class_image_paths,
