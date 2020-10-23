@@ -136,7 +136,7 @@ def get_indices(df, root_dir):
     return class_image_paths, end_idx
 
 
-def get_loader(seq_length, bs, end_idx, class_image_paths, temp_transform, spat_transform, tensor_transform, lstm, oned, augment):
+def get_loader(seq_length, bs, end_idx, class_image_paths, temp_transform, spat_transform, tensor_transform, lstm, oned, augment, multi):
     sampler = MySampler(end_idx, seq_length)
     dataset = MyDataset(
         image_paths = class_image_paths,

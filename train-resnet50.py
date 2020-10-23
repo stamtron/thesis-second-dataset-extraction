@@ -40,7 +40,7 @@ train_temp_transform = get_temporal_transform()
 valid_spat_transform = get_spatial_transform(0)
 valid_temp_transform = va.TemporalFit(size=16)
 
-root_dir = '/media/scratch/astamoulakatos/centre_Ch2/'
+root_dir = '/media/raid/astamoulakatos/nsea_frame_sequences/centre_Ch2/'
 df = pd.read_csv('./important_csvs/more_balanced_dataset/small_set_multi_class.csv')
 ###################################################################################
 df_train = get_df(df, 50, True, False, False)
@@ -73,10 +73,11 @@ dataset = MyDataset(
         length = len(train_sampler),
         lstm = False,
         oned = True,
-        augment = False)
+        augment = False,
+        multi = 2)
 train_loader = DataLoader(
         dataset,
-        batch_size = 30,
+        batch_size = 100,
         sampler = train_sampler,
         drop_last = True,
         num_workers = 0)
@@ -86,14 +87,14 @@ train_loader = DataLoader(
 #######################################################################################
 df_valid = get_df(df, 50, True, False, False)
 class_image_paths, end_idx = get_indices(df_valid, root_dir)
-valid_loader = get_loader(1, 30, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, False)
+valid_loader = get_loader(1, 100, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, False, 2)
 df_test = get_df(df, 50, False, False, True)
 class_image_paths, end_idx = get_indices(df_test, root_dir)
-test_loader = get_loader(1, 50, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, False)
+test_loader = get_loader(1, 50, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, False, 2)
 
 torch.cuda.empty_cache()
 
-load = True
+load = False
 if load:
     checkpoint = torch.load('/media/scratch/astamoulakatos/saved-resnet-models/best-checkpoint-000epoch.pth')
     resnet.load_state_dict(checkpoint['model_state_dict'])
