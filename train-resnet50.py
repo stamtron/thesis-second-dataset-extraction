@@ -40,7 +40,7 @@ train_temp_transform = get_temporal_transform()
 valid_spat_transform = get_spatial_transform(0)
 valid_temp_transform = va.TemporalFit(size=16)
 
-root_dir = '/media/raid/astamoulakatos/nsea_frame_sequences/centre_Ch2/'
+root_dir = '/media/scratch/astamoulakatos/centre_Ch2/'
 df = pd.read_csv('./important_csvs/more_balanced_dataset/small_set_multi_class.csv')
 ###################################################################################
 df_train = get_df(df, 50, True, False, False)
