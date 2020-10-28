@@ -40,11 +40,11 @@ train_temp_transform = get_temporal_transform()
 valid_spat_transform = get_spatial_transform(0)
 valid_temp_transform = va.TemporalFit(size=16)
 
-root_dir = '/media/scratch/astamoulakatos/centre_Ch2/'
-df = pd.read_csv('./important_csvs/more_balanced_dataset/small_set_multi_class.csv')
+root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
+df = pd.read_csv('./important_csvs/more_balanced_dataset/small_stratified.csv')
 ###################################################################################
-df_train = get_df(df, 50, True, False, False)
-class_image_paths, end_idx = get_indices(df_train, root_dir)
+df_train = get_df(df, 20, True, False, False)
+class_image_paths, end_idx, idx_label = get_indices(df_train, root_dir)
 #train_loader = get_loader(1, 32, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, True)
 seq_length = 1
 indices = []
@@ -74,23 +74,24 @@ dataset = MyDataset(
         lstm = False,
         oned = True,
         augment = False,
-        multi = 2)
+        multi = 1)
 train_loader = DataLoader(
         dataset,
-        batch_size = 100,
+        batch_size = 150,
         sampler = train_sampler,
         drop_last = True,
         num_workers = 0)
 
 
-
+print(len(dataset))
+print(len(train_loader))
 #######################################################################################
-df_valid = get_df(df, 50, True, False, False)
-class_image_paths, end_idx = get_indices(df_valid, root_dir)
-valid_loader = get_loader(1, 100, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, False, 2)
-df_test = get_df(df, 50, False, False, True)
-class_image_paths, end_idx = get_indices(df_test, root_dir)
-test_loader = get_loader(1, 50, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, False, 2)
+df_valid = get_df(df, 20, True, False, False)
+class_image_paths, end_idx, idx_label = get_indices(df_valid, root_dir)
+valid_loader = get_loader(1, 150, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, True, 1)
+df_test = get_df(df, 20, False, False, True)
+class_image_paths, end_idx, idx_label = get_indices(df_test, root_dir)
+test_loader = get_loader(1, 150, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, True, 1)
 
 torch.cuda.empty_cache()
 
@@ -137,6 +138,6 @@ if load:
     
 save_model_path = '/media/scratch/astamoulakatos/saved-resnet-models/'
 device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet2D_focal_loss_overfit_unf')
+writer = SummaryWriter('runs/ResNet2D_focal_small_data')
 train_model_yo(save_model_path, dataloaders, device, resnet, criterion, optimizer, scheduler, writer, epochs)
 writer.close()
