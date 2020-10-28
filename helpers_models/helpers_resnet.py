@@ -270,7 +270,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                    # samples_per_cls = [46.9, 12.2, 16, 10.8, 14.1]
                     #wei = CB_weights(lab, samples_per_cls, no_of_classes, beta)
                    # wei = wei.to(device)
-                    pos_wei = torch.tensor([1, 3, 3, 3, 3])
+                    pos_wei = torch.tensor([1, 1, 1, 1, 1])
                     pos_wei = pos_wei.to(device)
                     criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
                     loss_bce = criterion2(outputs, labels)
@@ -399,6 +399,8 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
             epoch_acc = running_acc / len(dataloaders[phase].dataset)
             epoch_f1 = running_f1 / len(dataloaders[phase].dataset)
+            print('COUNTER = ')
+            print(counter)
             
             if phase == 'train':
                 train_losses.append(epoch_loss)
