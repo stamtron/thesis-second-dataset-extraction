@@ -223,14 +223,29 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                         writer.add_scalar('training FJ f1', f1_labels[2], epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('training And f1', f1_labels[3], epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('training FS f1', f1_labels[4], epoch * len(dataloaders[phase]) + counter)
-                        writer.add_scalar('training loss',
+                        writer.add_scalar('training bce loss',
+                                        running_loss_bce/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training focal loss',
                                         running_loss/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('training acc',
                                         running_acc/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
-                        writer.add_scalar('training f1',
+                        writer.add_scalar('training f1 samples',
                                         running_f1/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training f1 micro',
+                                        running_f1_micro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training f1 macro',
+                                        running_f1_macro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training hamming loss',
+                                        running_hamming_loss/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training zero one loss',
+                                        running_zero_one/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('learning rate', lrate, epoch * len(dataloaders[phase]) + counter)
                         y_true = []
@@ -241,14 +256,29 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                                                                                          running_acc/(inputs.size(0)*counter),
                                                                                          running_f1/(inputs.size(0)*counter))
                         print(result)
-                        writer.add_scalar('validation loss',
+                        writer.add_scalar('validation bce loss',
+                                        running_loss_bce/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation focal loss',
                                         running_loss/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('validation acc',
                                         running_acc/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
-                        writer.add_scalar('validation f1',
+                        writer.add_scalar('validation f1 samples',
                                         running_f1/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation f1 micro',
+                                        running_f1_micro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation f1 macro',
+                                        running_f1_macro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation hamming loss',
+                                        running_hamming_loss/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation zero one loss',
+                                        running_zero_one/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
                         classes = ['Exposure', 'Burial', 'Field Joint', 'Anode', 'Free Span']
                         y_tr = np.vstack([t.__array__() for tensor in y_true for t in tensor])
