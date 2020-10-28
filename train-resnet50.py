@@ -77,7 +77,7 @@ dataset = MyDataset(
         multi = 1)
 train_loader = DataLoader(
         dataset,
-        batch_size = 150,
+        batch_size = 30,
         sampler = train_sampler,
         drop_last = True,
         num_workers = 0)
@@ -86,18 +86,18 @@ train_loader = DataLoader(
 print(len(dataset))
 print(len(train_loader))
 #######################################################################################
-df_valid = get_df(df, 20, True, False, False)
+df_valid = get_df(df, 20, False, True, False)
 class_image_paths, end_idx, idx_label = get_indices(df_valid, root_dir)
-valid_loader = get_loader(1, 150, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, True, 1)
+valid_loader = get_loader(1, 30, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, True, 1)
 df_test = get_df(df, 20, False, False, True)
 class_image_paths, end_idx, idx_label = get_indices(df_test, root_dir)
 test_loader = get_loader(1, 150, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, True, 1)
 
 torch.cuda.empty_cache()
 
-load = False
+load = True
 if load:
-    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-resnet-models/best-checkpoint-000epoch.pth')
+    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-resnet-models/second-small/best-checkpoint-011epoch.pth')
     resnet.load_state_dict(checkpoint['model_state_dict'])
     print('loading pretrained freezed model!')
     
@@ -131,13 +131,13 @@ if load:
     epochs = 15
     optimizer = optim.AdamW(resnet.parameters(), lr=lr, weight_decay=1e-2)
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    lr = 5e-3
+    lr = 5e-04
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.000001, patience=3)
     
 save_model_path = '/media/scratch/astamoulakatos/saved-resnet-models/'
 device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet2D_focal_small_data')
+writer = SummaryWriter('runs/ResNet2D_focal_small_data_unfreezed')
 train_model_yo(save_model_path, dataloaders, device, resnet, criterion, optimizer, scheduler, writer, epochs)
 writer.close()
