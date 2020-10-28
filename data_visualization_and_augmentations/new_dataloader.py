@@ -42,7 +42,7 @@ def show_batch(loader, bs, resnet3d=False):
             inputs = inputs.permute(0,2,1,3,4)
     for j in range(bs):
         # Make a grid from batch
-        out = torchvision.utils.make_grid(inputs[j])
+        out = torchvision.utils.make_grid(inputs[j], nrow=int(inputs.shape[1]/3))
         for i, f in enumerate(one_hot_classes):
             if np.array_equal(classes[j].numpy(), np.asarray(f)):
                 title = class_names[i]

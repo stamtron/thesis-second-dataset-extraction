@@ -48,19 +48,19 @@ def get_tensor_transform(finetuned_dataset, resize = False):
     return tensor_transform
 
 
-def get_temporal_transform():
+def get_temporal_transform(length = 16):
     temp_transform = va.OneOf([
-        va.TemporalBeginCrop(size=16),
-        va.TemporalCenterCrop(size=16),
-        va.TemporalRandomCrop(size=16),
-        va.TemporalFit(size=16),
+        va.TemporalBeginCrop(size = length),
+        va.TemporalCenterCrop(size = length),
+        va.TemporalRandomCrop(size = length),
+        va.TemporalFit(size = length),
         va.Sequential([
             va.TemporalElasticTransformation(),
-            va.TemporalFit(size=16),
+            va.TemporalFit(size = length),
         ]),
         va.Sequential([     
             va.InverseOrder(),
-            va.TemporalFit(size=16),
+            va.TemporalFit(size = length),
         ]),
     ])
     return temp_transform
@@ -106,6 +106,7 @@ def get_indices(df, root_dir):
     #class_names = ['exp_fs','bur','exp','exp_and','exp_fj']
     #one_hot_classes = [[1,0,0,0,1],[0,1,0,0,0],[1,0,0,0,0],[1,0,0,1,0],[1,0,1,0,0]]
     class_image_paths = []
+    idx_label = []
     end_idx = []
     for c, class_path in enumerate(class_paths):
          for d in os.scandir(class_path):
@@ -115,25 +116,31 @@ def get_indices(df, root_dir):
                     if 'bur' in class_path:
                         multi_label = [0,1,0,0,0]
                         multi_class = [0,1,0,0,0]
+                        label = 'bur'
                     if 'exp' in class_path:
                         multi_label = [1,0,0,0,0]
                         multi_class = [1,0,0,0,0]
+                        label = 'exp'
                     if 'exp_fj' in class_path:
                         multi_label = [1,0,1,0,0]
                         multi_class = [0,0,1,0,0]
+                        label = 'exp_fj'
                     if 'exp_fs' in class_path:
                         multi_label = [1,0,0,0,1]
                         multi_class = [0,0,0,0,1]
+                        label = 'exp_fs'
                     if 'exp_and' in class_path:
                         multi_label = [1,0,0,1,0]
                         multi_class = [0,0,0,1,0]
+                        label = 'exp_and'
                     new_paths = [(p, multi_label, multi_class) for p in paths]
                     class_image_paths.extend(new_paths)
                     end_idx.extend([len(paths)])
+                    idx_label.append(label) #change that!!!!!!
                     
     end_idx = [0, *end_idx]
     end_idx = torch.cumsum(torch.tensor(end_idx), 0)
-    return class_image_paths, end_idx
+    return class_image_paths, end_idx, idx_label
 
 
 def get_loader(seq_length, bs, end_idx, class_image_paths, temp_transform, spat_transform, tensor_transform, lstm, oned, augment, multi):
