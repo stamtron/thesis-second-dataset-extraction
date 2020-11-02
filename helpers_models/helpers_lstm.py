@@ -250,7 +250,7 @@ def validation(cnn_encoder, rnn_decoder, device, criterion, valid_loader, optimi
     return result
 
 
-def train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=6):
+def train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, num_epochs=6):
     #liveloss = PlotLosses()
     model = model.to(device)
     val_loss = 100
@@ -272,39 +272,152 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
             running_loss = 0.0
             running_acc = 0.0  
             running_f1 = 0.0
+            running_f1_micro = 0.0
+            running_f1_macro = 0.0
+            running_zero_one = 0.0
+            running_hamming_loss = 0.0
+            running_loss_bce = 0.0
+            y_true = []
+            y_pred = []
             #train_result = []
             for counter, (inputs, labels) in enumerate(Bar(dataloaders[phase])):
                 inputs = inputs.to(device)
+                #lab = labels
                 labels = labels.to(device)
                 
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
+                    #no_of_classes = 5
+                    #beta = 0.99
+                    #samples_per_cls = [46.9, 12.2, 16, 10.8, 14.1]
+                    #wei = CB_weights(lab, samples_per_cls, no_of_classes, beta)
+                    #wei = wei.to(device)
+                    #pos_wei = torch.tensor([100/46.9, 100/12.2, 100/16, 100/10.8, 100/14.1])
+                    #pos_wei = pos_wei.to(device)
+                    #criterion = nn.BCEWithLogitsLoss(weight = wei, pos_weight = pos_wei)
                     loss = criterion(outputs, labels)
+                    pos_wei = torch.tensor([1, 1, 1, 1, 1])
+                    pos_wei = pos_wei.to(device)
+                    criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
+                    loss_bce = criterion2(outputs, labels)
 
                 if phase == 'train':
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
-                    scheduler.step()
+                    scheduler.step(loss)
+                    lrate = optimizer.param_groups[0]['lr']
+                    lrate = np.array(lrate)
 
                 preds = torch.sigmoid(outputs).data > 0.5
                 preds = preds.to(torch.float32) 
+                y = labels.detach().cpu()
+                pred = preds.detach().cpu()
+                y_pred.append(pred)
+                y_true.append(y)
                 
-                running_loss += loss.item() * inputs.size(0)
                 running_acc += accuracy_score(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
                 running_f1 += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="samples")  *  inputs.size(0)
+                running_loss_bce += loss_bce.item() * inputs.size(0)
+                running_loss += loss.item() * inputs.size(0)
+                running_zero_one += zero_one_loss(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
+                running_hamming_loss += hamming_loss(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
+                running_f1_micro += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="micro")  *  inputs.size(0)
+                running_f1_macro += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="macro")  *  inputs.size(0)
            
-                if (counter!=0) and (counter%50==0):
+                if (counter!=0) and (counter%10==0):
                     if phase == 'train':
                         result = '  Training Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(running_loss/(inputs.size(0)*counter),
                                                                                          running_acc/(inputs.size(0)*counter),
                                                                                          running_f1/(inputs.size(0)*counter))
                         print(result)
+                        classes = ['Exposure', 'Burial', 'Field Joint', 'Anode', 'Free Span']
+                        y_tr = np.vstack([t.__array__() for tensor in y_true for t in tensor])
+                        y_pr = np.vstack([t.__array__() for tensor in y_pred for t in tensor])
+                        acc_labels, f1_labels = compute_label_metrics(y_tr, y_pr, 0.5, classes)
+                        writer.add_scalar('training Exp acc', acc_labels[0], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training Bur acc', acc_labels[1], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training FJ acc', acc_labels[2], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training And acc', acc_labels[3], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training FS acc', acc_labels[4], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training Exp f1', f1_labels[0], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training Bur f1', f1_labels[1], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training FJ f1', f1_labels[2], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training And f1', f1_labels[3], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training FS f1', f1_labels[4], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training bce loss',
+                                        running_loss_bce/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training focal loss',
+                                        running_loss/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training acc',
+                                        running_acc/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training f1 samples',
+                                        running_f1/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training f1 micro',
+                                        running_f1_micro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training f1 macro',
+                                        running_f1_macro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training hamming loss',
+                                        running_hamming_loss/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training zero one loss',
+                                        running_zero_one/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('learning rate', lrate, epoch * len(dataloaders[phase]) + counter)
+                        y_true = []
+                        y_pred = []
+                        
                     if phase == 'validation':
                         result = '  Validation Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(running_loss/(inputs.size(0)*counter),
                                                                                          running_acc/(inputs.size(0)*counter),
                                                                                          running_f1/(inputs.size(0)*counter))
                         print(result)
+                        writer.add_scalar('validation bce loss',
+                                        running_loss_bce/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation focal loss',
+                                        running_loss/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation acc',
+                                        running_acc/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation f1 samples',
+                                        running_f1/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation f1 micro',
+                                        running_f1_micro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation f1 macro',
+                                        running_f1_macro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation hamming loss',
+                                        running_hamming_loss/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation zero one loss',
+                                        running_zero_one/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        classes = ['Exposure', 'Burial', 'Field Joint', 'Anode', 'Free Span']
+                        y_tr = np.vstack([t.__array__() for tensor in y_true for t in tensor])
+                        y_pr = np.vstack([t.__array__() for tensor in y_pred for t in tensor])
+                        acc_labels, f1_labels = compute_label_metrics(y_tr, y_pr, 0.5, classes)
+                        writer.add_scalar('validation Exp acc', acc_labels[0], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation Bur acc', acc_labels[1], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation FJ acc', acc_labels[2], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation And acc', acc_labels[3], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation FS acc', acc_labels[4], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation Exp f1', f1_labels[0], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation Bur f1', f1_labels[1], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation FJ f1', f1_labels[2], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation And f1', f1_labels[3], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation FS f1', f1_labels[4], epoch * len(dataloaders[phase]) + counter)
+                        y_true = []
+                        y_pred = []
                         
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
             epoch_acc = running_acc / len(dataloaders[phase].dataset)
