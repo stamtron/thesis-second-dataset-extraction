@@ -38,6 +38,8 @@ from model import generate_model
 import time
 from utils import AverageMeter
 from sklearn.metrics import precision_score,f1_score, accuracy_score, jaccard_score
+from sklearn.metrics import hamming_loss
+from sklearn.metrics import zero_one_loss
 
 class AdaptiveConcatPool3d(torch.nn.Module):
     "Layer that concats `AdaptiveAvgPool2d` and `AdaptiveMaxPool2d`."
@@ -164,6 +166,11 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
             running_loss = 0.0
             running_acc = 0.0  
             running_f1 = 0.0
+            running_f1_micro = 0.0
+            running_f1_macro = 0.0
+            running_zero_one = 0.0
+            running_hamming_loss = 0.0
+            running_loss_bce = 0.0
             y_true = []
             y_pred = []
             #train_result = []
@@ -183,6 +190,10 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                     #pos_wei = pos_wei.to(device)
                     #criterion = nn.BCEWithLogitsLoss(weight = wei, pos_weight = pos_wei)
                     loss = criterion(outputs, labels)
+                    pos_wei = torch.tensor([1, 1, 1, 1, 1])
+                    pos_wei = pos_wei.to(device)
+                    criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
+                    loss_bce = criterion2(outputs, labels)
 
                 if phase == 'train':
                     optimizer.zero_grad()
@@ -199,9 +210,14 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 y_pred.append(pred)
                 y_true.append(y)
                 
-                running_loss += loss.item() * inputs.size(0)
                 running_acc += accuracy_score(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
                 running_f1 += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="samples")  *  inputs.size(0)
+                running_loss_bce += loss_bce.item() * inputs.size(0)
+                running_loss += loss.item() * inputs.size(0)
+                running_zero_one += zero_one_loss(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
+                running_hamming_loss += hamming_loss(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
+                running_f1_micro += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="micro")  *  inputs.size(0)
+                running_f1_macro += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="macro")  *  inputs.size(0)
            
                 if (counter!=0) and (counter%10==0):
                     if phase == 'train':

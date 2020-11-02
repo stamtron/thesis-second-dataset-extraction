@@ -35,6 +35,20 @@ from sklearn.metrics import hamming_loss
 from sklearn.metrics import zero_one_loss
 
 
+# from torch.optim import Adam
+
+# model = Net()
+
+# optim = Adam(
+#     [
+#         {"params": model.fc.parameters(), "lr": 1e-3},
+#         {"params": model.agroupoflayer.parameters()},
+#         {"params": model.lastlayer.parameters(), "lr": 4e-2},
+#     ],
+#     lr=5e-4,
+# )
+
+
 def nsea_compute_thresholds(y_true, y_pred):
 #     y_pred = numpy.asarray(y[0])
 #     y_true = numpy.asarray(y[1])

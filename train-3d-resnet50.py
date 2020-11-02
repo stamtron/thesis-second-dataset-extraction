@@ -33,7 +33,7 @@ myopts = opts(**options)
 model, parameters = generate_model(myopts)
 
 adaptive_pooling = AdaptiveConcatPool3d()
-os.environ['CUDA_VISIBLE_DEVICES']='0'
+os.environ['CUDA_VISIBLE_DEVICES']='0,1,2'
 #torch.cuda.empty_cache()
 device = torch.device('cuda') 
 head = Head()
@@ -68,19 +68,19 @@ if load:
 check_freeze(model.module)
 #model = nn.DataParallel(model)
     
-tensor_transform = get_tensor_transform('Kinetics', True)
-train_spat_transform = get_spatial_transform(2)
-train_temp_transform = get_temporal_transform()
+tensor_transform = get_tensor_transform('Kinetics', False)
+train_spat_transform = get_spatial_transform(0)
+train_temp_transform = get_temporal_transform(16)
 valid_spat_transform = get_spatial_transform(0)
 valid_temp_transform = va.TemporalFit(size=16)
 
-root_dir = '/media/scratch/astamoulakatos/nsea_frame_sequences/centre_Ch2/'
-df = pd.read_csv('./important_csvs/more_balanced_dataset/more_balanced_stratified.csv')
+root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
+df = pd.read_csv('./important_csvs/more_balanced_dataset/small_stratified.csv')
 
 ################################################################## Make function for that junk of code
-df_train = get_df(df, 50, True, False, False)
-class_image_paths, end_idx = get_indices(df_train, root_dir)
-seq_length = 16
+df_train = get_df(df, 20, True, False, False)
+class_image_paths, end_idx, idx_label = get_indices(df_train, root_dir)
+seq_length = 20
 indices = []
 for i in range(len(end_idx) - 1):
     start = end_idx[i]
@@ -106,27 +106,29 @@ dataset = MyDataset(
         tensor_transform = tensor_transform,
         length = len(train_sampler),
         lstm = False,
-        oned = False)
+        oned = False,
+        augment = True,
+        multi = 1)
 train_loader = DataLoader(
         dataset,
-        batch_size = 20,
+        batch_size = 18,
         sampler = train_sampler,
         drop_last = True,
         num_workers = 0)
 ##########################################################################################
 
 #train_loader = get_loader(16, 64, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, False)
-df_valid = get_df(df, 50, False, True, False)
-class_image_paths, end_idx = get_indices(df_valid, root_dir)
-valid_loader = get_loader(16, 20, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False)
-df_test = get_df(df, 50, False, False, True)
-class_image_paths, end_idx = get_indices(df_test, root_dir)
-test_loader = get_loader(16, 20, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False)
+df_valid = get_df(df, 20, False, True, False)
+class_image_paths, end_idx, idx_label= get_indices(df_valid, root_dir)
+valid_loader = get_loader(16, 18, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False, True, 1)
+df_test = get_df(df, 20, False, False, True)
+class_image_paths, end_idx, idx_label = get_indices(df_test, root_dir)
+test_loader = get_loader(16, 18, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False, True, 1)
 
 lr = 1e-2
-epochs = 10
+epochs = 15
 optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
-pos_wei = torch.tensor([0.33, 3.0, 3.0, 3.0, 3.0])
+pos_wei = torch.tensor([1, 1, 1, 1, 1])
 pos_wei = pos_wei.cuda()
 #criterion = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
 criterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
@@ -134,14 +136,14 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', fa
 #scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)
 torch.cuda.empty_cache()
 
-# if load:
-#     epochs = 10
-#     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
-#     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-#     lr = 5e-3
-#     for param_group in optimizer.param_groups:
-#         param_group['lr'] = lr
-#     scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)
+if load:
+    epochs = 15
+    optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    lr = 5e-3
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+    scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)
     
 
 dataloaders = {
@@ -150,9 +152,9 @@ dataloaders = {
 }
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-save_model_path = '/media/raid/astamoulakatos/saved-3d-models/'
+save_model_path = '/media/scratch/astamoulakatos/saved-3d-models/'
 #device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet3D_focal_loss_balanced_dataloader')
+writer = SummaryWriter('runs/ResNet3D_first_small_again')
 train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, num_epochs=epochs)
 writer.close()
 

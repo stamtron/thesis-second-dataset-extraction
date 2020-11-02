@@ -11,21 +11,60 @@ from helpers_training import *
 
 tensor_transform = get_tensor_transform('ImageNet', True)
 train_spat_transform = get_spatial_transform(2)
-train_temp_transform = get_temporal_transform()
+train_temp_transform = get_temporal_transform(16)
 valid_spat_transform = get_spatial_transform(0)
 valid_temp_transform = va.TemporalFit(size=16)
 
 root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
-df = pd.read_csv('./small_dataset_csvs/events_with_number_of_frames_stratified.csv')
-df_train = get_df(df, 20, False, True, False)
-class_image_paths, end_idx = get_indices(df_train, root_dir)
-train_loader = get_loader(16, 64, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, True, False)
+df = pd.read_csv('./important_csvs/more_balanced_dataset/small_stratified.csv')
+
+################################################################## Make function for that junk of code
+df_train = get_df(df, 20, True, False, False)
+class_image_paths, end_idx, idx_label = get_indices(df_train, root_dir)
+seq_length = 20
+indices = []
+for i in range(len(end_idx) - 1):
+    start = end_idx[i]
+    end = end_idx[i + 1] - seq_length
+    if start > end:
+        pass
+    else:
+        indices.append(torch.arange(start, end))
+indices = torch.cat(indices)
+indices = indices[torch.randperm(len(indices))]
+labels = []
+for i in class_image_paths:
+    labels.append(i[1])
+labels = np.array(labels)
+train_sampler = MultilabelBalancedRandomSampler(
+    labels, indices, class_choice="least_sampled"
+)
+dataset = MyDataset(
+        image_paths = class_image_paths,
+        seq_length = seq_length,
+        temp_transform = valid_temp_transform,
+        spat_transform = valid_spat_transform,
+        tensor_transform = tensor_transform,
+        length = len(train_sampler),
+        lstm = True,
+        oned = False,
+        augment = True,
+        multi = 1)
+train_loader = DataLoader(
+        dataset,
+        batch_size = 18,
+        sampler = train_sampler,
+        drop_last = True,
+        num_workers = 0)
+##########################################################################################
+
+#train_loader = get_loader(16, 64, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, False)
 df_valid = get_df(df, 20, False, True, False)
-class_image_paths, end_idx = get_indices(df_valid, root_dir)
-valid_loader = get_loader(16, 64, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, True, False)
+class_image_paths, end_idx, idx_label= get_indices(df_valid, root_dir)
+valid_loader = get_loader(16, 18, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, True, False, True, 1)
 df_test = get_df(df, 20, False, False, True)
-class_image_paths, end_idx = get_indices(df_test, root_dir)
-test_loader = get_loader(16, 128, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, True, False)
+class_image_paths, end_idx, idx_label = get_indices(df_test, root_dir)
+test_loader = get_loader(16, 18, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, True, False, True, 1)
 
 device = torch.device('cuda')
 cnn_encoder = ResCNNEncoder().to(device)
@@ -69,14 +108,19 @@ check_freeze(model[0].module)
 check_freeze(model[0].module.resnet)
 check_freeze(model[1].module)
 
-lr = 1e-3
-epochs = 6
-optimizer = optim.Adam(crnn_params, lr=lr, weight_decay=1e-2)
-criterion = nn.BCEWithLogitsLoss()
-scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)
+lr = 1e-2
+epochs = 15
+optimizer = optim.AdamW(resnet.parameters(), lr=lr, weight_decay=1e-2)
+pos_wei = torch.tensor([1, 1, 0.75, 1.5, 1])
+pos_wei = pos_wei.cuda()
+#criterion = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
+criterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.000001, patience=3)
+#scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)
+
 
 if load:
-    epochs = 10
+    epochs = 15
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-2)
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     lr = 1e-3
@@ -86,8 +130,11 @@ if load:
     
 dataloaders = {
     "train": train_loader,
-    "validation": train_loader
+    "validation": valid_loader
 }
-save_model_path = '/media/scratch/astamoulakatos/saved-lstm-models/'
 
-train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, num_epochs=epochs)
+save_model_path = '/media/scratch/astamoulakatos/saved-lstm-models/'
+device = torch.device('cuda')
+writer = SummaryWriter('runs/ResNet2D_LSTM_small')
+train_model_yo(save_model_path, dataloaders, device, resnet, criterion, optimizer, scheduler, writer, epochs)
+writer.close()
