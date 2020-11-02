@@ -141,7 +141,7 @@ def plot_pr_curves(first_lim, y_true, y_pred, classes):
     plt.xlim(first_lim,1.05)
     plt.ylim(first_lim,1.05)
     plt.title("Precision Recall Curves")
-    #plt.legend()
+    plt.legend()
     #plt.axis('off')
     #plt.axis('equal')
     #plt.gca().set_aspect('equal')

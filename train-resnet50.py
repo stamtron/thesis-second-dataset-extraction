@@ -37,7 +37,7 @@ check_freeze(resnet.module)
 tensor_transform = get_tensor_transform('ImageNet', False)
 train_spat_transform = get_spatial_transform(2)
 train_temp_transform = get_temporal_transform()
-valid_spat_transform = get_spatial_transform(0)
+valid_spat_transform = get_spatial_transform(2)
 valid_temp_transform = va.TemporalFit(size=16)
 
 root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
@@ -73,7 +73,7 @@ dataset = MyDataset(
         length = len(train_sampler),
         lstm = False,
         oned = True,
-        augment = False,
+        augment = True,
         multi = 1)
 train_loader = DataLoader(
         dataset,
@@ -97,7 +97,7 @@ torch.cuda.empty_cache()
 
 load = True
 if load:
-    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-resnet-models/second-small/best-checkpoint-011epoch.pth')
+    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-resnet-models/forth-small/best-checkpoint-008epoch.pth')
     resnet.load_state_dict(checkpoint['model_state_dict'])
     print('loading pretrained freezed model!')
     
@@ -115,7 +115,7 @@ if load:
 lr = 1e-2
 epochs = 15
 optimizer = optim.AdamW(resnet.parameters(), lr=lr, weight_decay=1e-2)
-pos_wei = torch.tensor([1, 1, 1, 1, 1])
+pos_wei = torch.tensor([1, 1, 0.75, 1.5, 1])
 pos_wei = pos_wei.cuda()
 #criterion = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
 criterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
@@ -131,13 +131,13 @@ if load:
     epochs = 15
     optimizer = optim.AdamW(resnet.parameters(), lr=lr, weight_decay=1e-2)
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    lr = 5e-04
+    lr = 1e-04
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.000001, patience=3)
     
 save_model_path = '/media/scratch/astamoulakatos/saved-resnet-models/'
 device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet2D_focal_small_data_unfreezed')
+writer = SummaryWriter('runs/ResNet2D_focal_small_data_unfreezed_forth_aug')
 train_model_yo(save_model_path, dataloaders, device, resnet, criterion, optimizer, scheduler, writer, epochs)
 writer.close()
