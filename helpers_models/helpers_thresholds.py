@@ -108,7 +108,7 @@ def truncate_decimals(arr, places=3):
 # result[event_type] = opt_thres
 
 
-def plot_pr_curves(first_lim, y_true, y_pred, classes):
+def plot_pr_curves(first_lim, y_true, y_pred, classes, model_type):
     precisions = dict()
     recalls = dict()
     Thresholds = dict()
@@ -145,7 +145,7 @@ def plot_pr_curves(first_lim, y_true, y_pred, classes):
     #plt.axis('off')
     #plt.axis('equal')
     #plt.gca().set_aspect('equal')
-    plt.savefig('figures/precision_recall_curve_zoom.png', dpi=300)
+    plt.savefig('figures/precision_recall_curve_zoom' + model_type +'.png', dpi=300)
     plt.show()    
 
     
