@@ -121,7 +121,7 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', fa
 
 if load:
     epochs = 15
-    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-2)
+    optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     lr = 1e-3
     for param_group in optimizer.param_groups:
