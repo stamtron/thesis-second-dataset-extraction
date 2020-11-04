@@ -51,17 +51,19 @@ for param in model.module.avgpool.parameters():
 for param in model.module.fc.parameters():
     param.requires_grad = True
 
-load = False
+load = True
 if load:
-    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-3d-models/best-checkpoint-009epoch.pth')
+    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-3d-models/first-small/best-checkpoint-012epoch.pth')
     model.load_state_dict(checkpoint['model_state_dict'])
     print('loading pretrained freezed model!')
 
     for param in model.module.parameters():
         param.requires_grad = False
-    
+        
+    for param in model.module.fc.parameters():
+        param.requires_grad = True
     # unfreeze 50% of the model
-    unfreeze(model.module , 1)
+    #unfreeze(model.module , 1)
 
     check_freeze(model)
     
@@ -128,7 +130,7 @@ test_loader = get_loader(20, 18, end_idx, class_image_paths, valid_temp_transfor
 lr = 1e-2
 epochs = 15
 optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
-pos_wei = torch.tensor([1, 1, 1, 1, 1])
+pos_wei = torch.tensor([1, 1, 0.75, 1.5, 1])
 pos_wei = pos_wei.cuda()
 #criterion = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
 criterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
@@ -143,7 +145,7 @@ if load:
     lr = 5e-3
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
-    scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.000001, patience=3)
     
 
 dataloaders = {
@@ -154,7 +156,7 @@ dataloaders = {
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 save_model_path = '/media/scratch/astamoulakatos/saved-3d-models/'
 #device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet3D_first_small_again')
+writer = SummaryWriter('runs/ResNet3D_second_small')
 train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, num_epochs=epochs)
 writer.close()
 
