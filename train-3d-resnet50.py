@@ -113,7 +113,7 @@ dataset = MyDataset(
         multi = 1)
 train_loader = DataLoader(
         dataset,
-        batch_size = 18,
+        batch_size = 15,
         sampler = train_sampler,
         drop_last = True,
         num_workers = 0)
@@ -122,15 +122,15 @@ train_loader = DataLoader(
 #train_loader = get_loader(16, 64, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, False)
 df_valid = get_df(df, 20, False, True, False)
 class_image_paths, end_idx, idx_label= get_indices(df_valid, root_dir)
-valid_loader = get_loader(20, 18, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False, True, 1)
+valid_loader = get_loader(20, 15, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False, True, 1)
 df_test = get_df(df, 20, False, False, True)
 class_image_paths, end_idx, idx_label = get_indices(df_test, root_dir)
-test_loader = get_loader(20, 18, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False, True, 1)
+test_loader = get_loader(20, 15, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False, True, 1)
 
 lr = 1e-2
 epochs = 15
 optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
-pos_wei = torch.tensor([1, 1, 0.75, 1.5, 1])
+pos_wei = torch.tensor([1, 1, 1, 0.7, 1])
 pos_wei = pos_wei.cuda()
 #criterion = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
 criterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
@@ -142,7 +142,7 @@ if load:
     epochs = 15
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    lr = 5e-3
+    lr = 5e-04
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.000001, patience=3)
@@ -156,7 +156,7 @@ dataloaders = {
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 save_model_path = '/media/scratch/astamoulakatos/saved-3d-models/'
 #device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet3D_second_small')
+writer = SummaryWriter('runs/ResNet3D_third_small')
 train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, num_epochs=epochs)
 writer.close()
 
