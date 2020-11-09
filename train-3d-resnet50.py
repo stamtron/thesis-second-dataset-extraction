@@ -53,12 +53,12 @@ for param in model.module.fc.parameters():
 
 load = True
 if load:
-    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-3d-models/second-small/best-checkpoint-012epoch.pth')
+    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-3d-models/third-small/best-checkpoint-001epoch.pth')
     model.load_state_dict(checkpoint['model_state_dict'])
     print('loading pretrained freezed model!')
 
     for param in model.module.parameters():
-        param.requires_grad = True
+        param.requires_grad = False
         
     for param in model.module.fc.parameters():
         param.requires_grad = True
@@ -80,6 +80,7 @@ root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
 df = pd.read_csv('./important_csvs/more_balanced_dataset/small_stratified.csv')
 
 ################################################################## Make function for that junk of code
+bs = 15
 df_train = get_df(df, 20, True, False, False)
 class_image_paths, end_idx, idx_label = get_indices(df_train, root_dir)
 seq_length = 20
@@ -113,7 +114,7 @@ dataset = MyDataset(
         multi = 1)
 train_loader = DataLoader(
         dataset,
-        batch_size = 6,
+        batch_size = bs,
         sampler = train_sampler,
         drop_last = True,
         num_workers = 0)
@@ -122,10 +123,10 @@ train_loader = DataLoader(
 #train_loader = get_loader(16, 64, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, False)
 df_valid = get_df(df, 20, False, True, False)
 class_image_paths, end_idx, idx_label= get_indices(df_valid, root_dir)
-valid_loader = get_loader(20, 6, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False, True, 1)
+valid_loader = get_loader(20, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False, True, 1)
 df_test = get_df(df, 20, False, False, True)
 class_image_paths, end_idx, idx_label = get_indices(df_test, root_dir)
-test_loader = get_loader(20, 6, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False, True, 1)
+test_loader = get_loader(20, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False, True, 1)
 
 lr = 1e-2
 epochs = 15
@@ -142,7 +143,7 @@ if load:
     epochs = 15
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    lr = 1e-03
+    lr = 1e-2
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.000001, patience=3)
@@ -156,7 +157,7 @@ dataloaders = {
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 save_model_path = '/media/scratch/astamoulakatos/saved-3d-models/'
 #device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet3D_first_small_unfreezed')
+writer = SummaryWriter('runs/ResNet3D_third_small_vol3')
 train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, num_epochs=epochs)
 writer.close()
 
