@@ -54,8 +54,8 @@ class MySampler(torch.utils.data.Sampler):
     def __init__(self, end_idx, seq_length):
         indices = []
         for i in range(len(end_idx) - 1):
-            start = end_idx[i]
-            end = end_idx[i + 1] - seq_length
+            start = end_idx[i] #+ 20
+            end = end_idx[i + 1] - seq_length #- 20
             if start > end:
                 pass
             else:
