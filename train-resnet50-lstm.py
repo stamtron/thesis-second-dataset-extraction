@@ -8,8 +8,11 @@ sys.path.append('../video-classification/ResNetCRNN/')
 
 from helpers_lstm import *
 from helpers_training import *
+from focal_loss_2 import *
+from load_data_and_augmentations import *
+from imbalanced_sampler_3 import MultilabelBalancedRandomSampler
 
-tensor_transform = get_tensor_transform('ImageNet', True)
+tensor_transform = get_tensor_transform('ImageNet', False)
 train_spat_transform = get_spatial_transform(2)
 train_temp_transform = get_temporal_transform(16)
 valid_spat_transform = get_spatial_transform(0)
@@ -19,6 +22,7 @@ root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
 df = pd.read_csv('./important_csvs/more_balanced_dataset/small_stratified.csv')
 
 ################################################################## Make function for that junk of code
+bs = 50
 df_train = get_df(df, 20, True, False, False)
 class_image_paths, end_idx, idx_label = get_indices(df_train, root_dir)
 seq_length = 20
@@ -52,7 +56,7 @@ dataset = MyDataset(
         multi = 1)
 train_loader = DataLoader(
         dataset,
-        batch_size = 18,
+        batch_size = bs,
         sampler = train_sampler,
         drop_last = True,
         num_workers = 0)
@@ -61,10 +65,12 @@ train_loader = DataLoader(
 #train_loader = get_loader(16, 64, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, False)
 df_valid = get_df(df, 20, False, True, False)
 class_image_paths, end_idx, idx_label= get_indices(df_valid, root_dir)
-valid_loader = get_loader(16, 18, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, True, False, True, 1)
+valid_loader = get_loader(20, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, True, False, True, 1)
 df_test = get_df(df, 20, False, False, True)
 class_image_paths, end_idx, idx_label = get_indices(df_test, root_dir)
-test_loader = get_loader(16, 18, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, True, False, True, 1)
+test_loader = get_loader(20, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, True, False, True, 1)
+
+os.environ['CUDA_VISIBLE_DEVICES']='0,1'
 
 device = torch.device('cuda')
 cnn_encoder = ResCNNEncoder().to(device)
@@ -79,7 +85,7 @@ for param in cnn_encoder.headbn1.parameters():
 for param in cnn_encoder.fc1.parameters():
     param.requires_grad = True
     
-rnn_decoder = DecoderRNNattention(batch_size=64).to(device)
+rnn_decoder = DecoderRNNattention(batch_size=bs).to(device)
 for param in rnn_decoder.parameters():
     param.requires_grad = True
     
@@ -88,7 +94,7 @@ crnn_params, cnn_encoder, rnn_decoder = parallelize_model(cnn_encoder, rnn_decod
 model = nn.Sequential(cnn_encoder,rnn_decoder)
 torch.cuda.empty_cache()
 
-load = True
+load = False
 if load:
     checkpoint = torch.load('/media/scratch/astamoulakatos/saved-lstm-models/first-round-same-dataset/best-checkpoint-000epoch.pth')
     model.load_state_dict(checkpoint['model_state_dict'])
@@ -110,8 +116,8 @@ check_freeze(model[1].module)
 
 lr = 1e-2
 epochs = 15
-optimizer = optim.AdamW(resnet.parameters(), lr=lr, weight_decay=1e-2)
-pos_wei = torch.tensor([1, 1, 0.75, 1.5, 1])
+optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
+pos_wei = torch.tensor([1, 1, 1, 1, 1])
 pos_wei = pos_wei.cuda()
 #criterion = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
 criterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
@@ -133,8 +139,8 @@ dataloaders = {
     "validation": valid_loader
 }
 
-save_model_path = '/media/scratch/astamoulakatos/saved-lstm-models/'
+save_model_path = '/media/raid/astamoulakatos/saved-lstm-models/'
 device = torch.device('cuda')
 writer = SummaryWriter('runs/ResNet2D_LSTM_small')
-train_model_yo(save_model_path, dataloaders, device, resnet, criterion, optimizer, scheduler, writer, epochs)
+train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, epochs)
 writer.close()
