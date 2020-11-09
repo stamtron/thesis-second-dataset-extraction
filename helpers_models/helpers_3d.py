@@ -178,6 +178,8 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 inputs = inputs.to(device)
                 #lab = labels
                 labels = labels.to(device)
+                label_smoothing = 0.03
+                labels_smo = labels * (1 - label_smoothing) + 0.5 * label_smoothing
                 
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
@@ -189,11 +191,11 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                     #pos_wei = torch.tensor([100/46.9, 100/12.2, 100/16, 100/10.8, 100/14.1])
                     #pos_wei = pos_wei.to(device)
                     #criterion = nn.BCEWithLogitsLoss(weight = wei, pos_weight = pos_wei)
-                    loss = criterion(outputs, labels)
+                    loss = criterion(outputs, labels_smo)
                     pos_wei = torch.tensor([1, 1, 1, 1, 1])
                     pos_wei = pos_wei.to(device)
                     criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
-                    loss_bce = criterion2(outputs, labels)
+                    loss_bce = criterion2(outputs, labels_smo)
 
                 if phase == 'train':
                     optimizer.zero_grad()
@@ -210,14 +212,14 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 y_pred.append(pred)
                 y_true.append(y)
                 
-                running_acc += accuracy_score(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
-                running_f1 += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="samples")  *  inputs.size(0)
+                running_acc += accuracy_score(y.numpy(), pred.numpy()) *  inputs.size(0)
+                running_f1 += f1_score(y.numpy(), pred.numpy(), average="samples")  *  inputs.size(0)
                 running_loss_bce += loss_bce.item() * inputs.size(0)
                 running_loss += loss.item() * inputs.size(0)
-                running_zero_one += zero_one_loss(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
-                running_hamming_loss += hamming_loss(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
-                running_f1_micro += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="micro")  *  inputs.size(0)
-                running_f1_macro += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="macro")  *  inputs.size(0)
+                running_zero_one += zero_one_loss(y.numpy(), pred.numpy()) *  inputs.size(0)
+                running_hamming_loss += hamming_loss(y.numpy(), pred.numpy()) *  inputs.size(0)
+                running_f1_micro += f1_score(y.numpy(), pred.numpy(), average="micro")  *  inputs.size(0)
+                running_f1_macro += f1_score(y.numpy(), pred.numpy(), average="macro")  *  inputs.size(0)
            
                 if (counter!=0) and (counter%10==0):
                     if phase == 'train':
