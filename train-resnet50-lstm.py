@@ -94,14 +94,14 @@ crnn_params, cnn_encoder, rnn_decoder = parallelize_model(cnn_encoder, rnn_decod
 model = nn.Sequential(cnn_encoder,rnn_decoder)
 torch.cuda.empty_cache()
 
-load = False
+load = True
 if load:
-    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-lstm-models/first-round-same-dataset/best-checkpoint-000epoch.pth')
+    checkpoint = torch.load('/media/raid/astamoulakatos/saved-lstm-models/first-small/best-checkpoint-010epoch.pth')
     model.load_state_dict(checkpoint['model_state_dict'])
     print('loading pretrained freezed model!')
     
-    unfreeze(model[0].module ,0.6)
-    unfreeze(model[0].module.resnet ,0.3)
+    unfreeze(model[0].module ,1)
+    unfreeze(model[0].module.resnet ,1)
     unfreeze(model[1].module, 1)
     
     check_freeze(model[0].module)
@@ -117,7 +117,7 @@ check_freeze(model[1].module)
 lr = 1e-2
 epochs = 15
 optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
-pos_wei = torch.tensor([1, 1, 1, 1, 1])
+pos_wei = torch.tensor([1, 1, 1.5, 0.7, 1])
 pos_wei = pos_wei.cuda()
 #criterion = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
 criterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
@@ -129,7 +129,7 @@ if load:
     epochs = 15
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    lr = 1e-3
+    lr = 1e-4
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
     scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)
@@ -141,6 +141,6 @@ dataloaders = {
 
 save_model_path = '/media/raid/astamoulakatos/saved-lstm-models/'
 device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet2D_LSTM_small')
+writer = SummaryWriter('runs/ResNet2D_LSTM_small_unfrozen')
 train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, epochs)
 writer.close()

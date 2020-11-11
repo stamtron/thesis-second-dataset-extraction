@@ -178,83 +178,6 @@ def pred_acc(original, predicted):
     return torch.round(predicted).eq(original).sum().cpu().numpy()/len(original)
 
 
-def train(cnn_encoder, rnn_decoder, device, criterion, train_loader, optimizer, epoch):
-    cnn_encoder.train()
-    rnn_decoder.train()
-    running_loss = 0.0
-    running_acc = 0.0  
-    running_f1 = 0.0
-    result = []
-    N_count = 0   # counting total trained sample in one epoch
-    for batch_idx, (X, y) in enumerate(train_loader):
-        # distribute data to device
-        X, y = X.to(device), y.to(device) #.view(-1, )
-        y = y.squeeze(dim=1)
-        y = y.float()
-        N_count += X.size(0)
-        optimizer.zero_grad()
-        output = rnn_decoder(cnn_encoder(X)) 
-        loss = criterion(output, y)
-        loss.backward()
-        optimizer.step()
-        preds = torch.sigmoid(output).data > 0.5
-        preds = preds.to(torch.float32)     
-        #step_score = pred_acc(y, output.sigmoid())
-        #scores.append(step_score) 
-        running_loss += loss.item() * X.size(0)
-        running_acc += jaccard_score(y.detach().cpu().numpy() , 
-              (preds.cpu().detach().numpy()), 
-               average="samples")  *  X.size(0)
-        running_f1 += f1_score(y.detach().cpu().numpy() ,
-              (preds.detach().cpu().numpy()), 
-               average="samples")  *  X.size(0)
-    
-    epoch_loss = running_loss / len(train_loader.dataset)
-    epoch_acc = running_acc / len(train_loader.dataset)
-    epoch_f1 = running_f1 / len(train_loader.dataset)
-    
-    result.append('Training Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(epoch_loss, epoch_acc, epoch_f1))
-    print(result)
-    return result
-
-    
-def validation(cnn_encoder, rnn_decoder, device, criterion, valid_loader, optimizer, epoch, save_model_path):
-    cnn_encoder.eval()
-    rnn_decoder.eval()
-    result = []
-    running_loss = 0.0
-    running_acc = 0.0  
-    running_f1 = 0.0
-    with torch.no_grad():
-        for X, y in valid_loader:
-            # distribute data to device
-            X, y = X.to(device), y.to(device).view(-1, )
-            output = rnn_decoder(cnn_encoder(X))
-            loss = criterion(output, y)
-            running_loss += loss.item() * X.size(0)   
-            preds = torch.sigmoid(output).data > 0.5
-            preds = preds.to(torch.float32)  
-            running_acc += jaccard_score(y.detach().cpu().numpy() , 
-              (preds.cpu().detach().numpy()), 
-               average="samples")  *  X.size(0)
-            running_f1 += f1_score(y.detach().cpu().numpy() ,
-              (preds.detach().cpu().numpy()), 
-               average="samples")  *  X.size(0)
-            print(running_acc)
-    
-    epoch_loss = running_loss / len(valid_loader.dataset)
-    epoch_acc = running_acc / len(valid_loader.dataset)
-    epoch_f1 = running_f1 / len(valid_loader.dataset)
-    result.append('Validation Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(epoch_loss, epoch_acc, epoch_f1))
-    print(result)
-    
-    torch.save(cnn_encoder.state_dict(), os.path.join(save_model_path, 'cnn_encoder_epoch{}.pth'.format(epoch)))  # save spatial_encoder
-    torch.save(rnn_decoder.state_dict(), os.path.join(save_model_path, 'rnn_decoder_epoch{}.pth'.format(epoch)))  # save motion_encoder
-    torch.save(optimizer.state_dict(), os.path.join(save_model_path, 'optimizer_epoch{}.pth'.format(epoch)))      # save optimizer
-    print("Epoch {} model saved!".format(epoch))
-    
-    return result
-
 
 def train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, num_epochs=6):
     #liveloss = PlotLosses()
@@ -290,6 +213,8 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 inputs = inputs.to(device)
                 #lab = labels
                 labels = labels.to(device)
+                label_smoothing = 0.03
+                labels_smo = labels * (1 - label_smoothing) + 0.5 * label_smoothing
                 
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs = model(inputs)
@@ -301,11 +226,11 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                     #pos_wei = torch.tensor([100/46.9, 100/12.2, 100/16, 100/10.8, 100/14.1])
                     #pos_wei = pos_wei.to(device)
                     #criterion = nn.BCEWithLogitsLoss(weight = wei, pos_weight = pos_wei)
-                    loss = criterion(outputs, labels)
-                    pos_wei = torch.tensor([1, 1, 1, 1, 1])
+                    loss = criterion(outputs, labels_smo)
+                    pos_wei = torch.tensor([1, 1, 1.5, 0.7, 1])
                     pos_wei = pos_wei.to(device)
                     criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
-                    loss_bce = criterion2(outputs, labels)
+                    loss_bce = criterion2(outputs, labels_smo)
 
                 if phase == 'train':
                     optimizer.zero_grad()
@@ -322,14 +247,15 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 y_pred.append(pred)
                 y_true.append(y)
                 
-                running_acc += accuracy_score(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
-                running_f1 += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="samples")  *  inputs.size(0)
+                running_acc += accuracy_score(y.numpy(), pred.numpy()) *  inputs.size(0)
+                running_f1 += f1_score(y.numpy(), pred.numpy(), average="samples")  *  inputs.size(0)
                 running_loss_bce += loss_bce.item() * inputs.size(0)
                 running_loss += loss.item() * inputs.size(0)
-                running_zero_one += zero_one_loss(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
-                running_hamming_loss += hamming_loss(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
-                running_f1_micro += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="micro")  *  inputs.size(0)
-                running_f1_macro += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="macro")  *  inputs.size(0)
+                running_zero_one += zero_one_loss(y.numpy(), pred.numpy()) *  inputs.size(0)
+                running_hamming_loss += hamming_loss(y.numpy(), pred.numpy()) *  inputs.size(0)
+                running_f1_micro += f1_score(y.numpy(), pred.numpy(), average="micro")  *  inputs.size(0)
+                running_f1_macro += f1_score(y.numpy(), pred.numpy(), average="macro")  *  inputs.size(0)
+                running_jac += jaccard_score(y.numpy(), pred.numpy(), average="samples")  *  inputs.size(0)
            
                 if (counter!=0) and (counter%10==0):
                     if phase == 'train':
@@ -351,6 +277,9 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                         writer.add_scalar('training FJ f1', f1_labels[2], epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('training And f1', f1_labels[3], epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('training FS f1', f1_labels[4], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training jaccard score', 
+                                        running_jac/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)  
                         writer.add_scalar('training bce loss',
                                         running_loss_bce/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
@@ -408,6 +337,9 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                         writer.add_scalar('validation zero one loss',
                                         running_zero_one/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation jaccard score', 
+                                        running_jac/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter) 
                         classes = ['Exposure', 'Burial', 'Field Joint', 'Anode', 'Free Span']
                         y_tr = np.vstack([t.__array__() for tensor in y_true for t in tensor])
                         y_pr = np.vstack([t.__array__() for tensor in y_pred for t in tensor])
