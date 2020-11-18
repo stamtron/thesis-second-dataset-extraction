@@ -53,12 +53,12 @@ for param in model.module.fc.parameters():
 
 load = True
 if load:
-    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-3d-models/third-small/best-checkpoint-001epoch.pth')
+    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-3d-models/forth-small/best-checkpoint-014epoch.pth')
     model.load_state_dict(checkpoint['model_state_dict'])
     print('loading pretrained freezed model!')
 
     for param in model.module.parameters():
-        param.requires_grad = False
+        param.requires_grad = True
         
     for param in model.module.fc.parameters():
         param.requires_grad = True
@@ -80,7 +80,7 @@ root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
 df = pd.read_csv('./important_csvs/more_balanced_dataset/small_stratified.csv')
 
 ################################################################## Make function for that junk of code
-bs = 15
+bs = 6
 df_train = get_df(df, 20, True, False, False)
 class_image_paths, end_idx, idx_label = get_indices(df_train, root_dir)
 seq_length = 20
@@ -143,7 +143,7 @@ if load:
     epochs = 15
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    lr = 1e-2
+    lr = 1e-3
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.000001, patience=3)
@@ -157,7 +157,7 @@ dataloaders = {
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 save_model_path = '/media/scratch/astamoulakatos/saved-3d-models/'
 #device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet3D_third_small_vol3')
+writer = SummaryWriter('runs/ResNet3D_forth_small')
 train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, num_epochs=epochs)
 writer.close()
 

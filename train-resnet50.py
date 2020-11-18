@@ -115,7 +115,7 @@ if load:
 lr = 1e-2
 epochs = 15
 optimizer = optim.AdamW(resnet.parameters(), lr=lr, weight_decay=1e-2)
-pos_wei = torch.tensor([1, 1, 0.75, 1.5, 1])
+pos_wei = torch.tensor([1, 1, 1.5, 1.5, 1])
 pos_wei = pos_wei.cuda()
 #criterion = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
 criterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
