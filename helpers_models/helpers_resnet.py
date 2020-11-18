@@ -142,8 +142,9 @@ class Head(torch.nn.Module):
         x = self.fc1(x)
         x = self.headre1(x)
         x = self.headbn2(x)
+        x_512 = x
         x = self.fc2(x)
-        return x
+        return x, x_512
     
 def load_data(df, bs, seq_length):
     root_dir = '/media/hdd/astamoulakatos/nsea_video_jpegs/'
@@ -277,7 +278,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 labels = labels.to(device)
                 
                 with torch.set_grad_enabled(phase == 'train'):
-                    outputs = model(inputs)
+                    outputs, _ = model(inputs)
                     loss = criterion(outputs, labels)
                     #no_of_classes = 5
                     #beta = 0.99
