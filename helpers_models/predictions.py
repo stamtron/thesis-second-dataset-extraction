@@ -54,7 +54,7 @@ def plot_predictions_actuals(loader, bs, net, device, resnet3d = False):
     y = Variable(y.float()).to(device) 
     y = y.squeeze(dim=1)
     y = y.float()
-    output = net(X)
+    output, _ = net(X)
     y = y.detach().cpu()
     #loss = criterion(output, y)
     preds = torch.sigmoid(output)

@@ -206,6 +206,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
             running_zero_one = 0.0
             running_hamming_loss = 0.0
             running_loss_bce = 0.0
+            running_jac = 0
             y_true = []
             y_pred = []
             #train_result = []
@@ -213,11 +214,11 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 inputs = inputs.to(device)
                 #lab = labels
                 labels = labels.to(device)
-                label_smoothing = 0.03
+                label_smoothing = 0.1
                 labels_smo = labels * (1 - label_smoothing) + 0.5 * label_smoothing
                 
                 with torch.set_grad_enabled(phase == 'train'):
-                    outputs = model(inputs)
+                    outputs, _ = model(inputs)
                     #no_of_classes = 5
                     #beta = 0.99
                     #samples_per_cls = [46.9, 12.2, 16, 10.8, 14.1]
@@ -226,11 +227,18 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                     #pos_wei = torch.tensor([100/46.9, 100/12.2, 100/16, 100/10.8, 100/14.1])
                     #pos_wei = pos_wei.to(device)
                     #criterion = nn.BCEWithLogitsLoss(weight = wei, pos_weight = pos_wei)
-                    loss = criterion(outputs, labels_smo)
-                    pos_wei = torch.tensor([1, 1, 1.5, 0.7, 1])
-                    pos_wei = pos_wei.to(device)
-                    criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
-                    loss_bce = criterion2(outputs, labels_smo)
+                    if phase == 'train':
+                        loss = criterion(outputs, labels_smo)
+                        pos_wei = torch.tensor([1, 1, 1.2, 2, 1])
+                        pos_wei = pos_wei.to(device)
+                        criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
+                        loss_bce = criterion2(outputs, labels_smo)
+                    if phase == 'validation':
+                        loss = criterion(outputs, labels)
+                        pos_wei = torch.tensor([1, 1, 1.2, 2, 1])
+                        pos_wei = pos_wei.to(device)
+                        criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
+                        loss_bce = criterion2(outputs, labels)
 
                 if phase == 'train':
                     optimizer.zero_grad()

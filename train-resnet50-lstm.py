@@ -46,8 +46,8 @@ train_sampler = MultilabelBalancedRandomSampler(
 dataset = MyDataset(
         image_paths = class_image_paths,
         seq_length = seq_length,
-        temp_transform = valid_temp_transform,
-        spat_transform = valid_spat_transform,
+        temp_transform = train_spat_transform,
+        spat_transform = train_temp_transform,
         tensor_transform = tensor_transform,
         length = len(train_sampler),
         lstm = True,
@@ -96,7 +96,7 @@ torch.cuda.empty_cache()
 
 load = True
 if load:
-    checkpoint = torch.load('/media/raid/astamoulakatos/saved-lstm-models/first-small/best-checkpoint-010epoch.pth')
+    checkpoint = torch.load('/media/raid/astamoulakatos/saved-lstm-models/fifth-round-unfreezed/best-checkpoint-001epoch.pth')
     model.load_state_dict(checkpoint['model_state_dict'])
     print('loading pretrained freezed model!')
     
@@ -117,7 +117,7 @@ check_freeze(model[1].module)
 lr = 1e-2
 epochs = 15
 optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
-pos_wei = torch.tensor([1, 1, 1.5, 0.7, 1])
+pos_wei = torch.tensor([1, 1, 1.5, 3, 1])
 pos_wei = pos_wei.cuda()
 #criterion = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
 criterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
@@ -126,13 +126,13 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', fa
 
 
 if load:
-    epochs = 15
+    epochs = 30
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    lr = 1e-4
+    lr = 1e-5
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
-    scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.000001, patience=3)
     
 dataloaders = {
     "train": train_loader,
@@ -141,6 +141,6 @@ dataloaders = {
 
 save_model_path = '/media/raid/astamoulakatos/saved-lstm-models/'
 device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet2D_LSTM_small_unfrozen')
+writer = SummaryWriter('runs/ResNet2D_LSTM_fifth_unfreezed')
 train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, epochs)
 writer.close()
