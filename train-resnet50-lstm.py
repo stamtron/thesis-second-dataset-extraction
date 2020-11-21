@@ -11,6 +11,7 @@ from helpers_training import *
 from focal_loss_2 import *
 from load_data_and_augmentations import *
 from imbalanced_sampler_3 import MultilabelBalancedRandomSampler
+from warp_lsep import *
 
 tensor_transform = get_tensor_transform('ImageNet', False)
 train_spat_transform = get_spatial_transform(2)
@@ -96,7 +97,7 @@ torch.cuda.empty_cache()
 
 load = True
 if load:
-    checkpoint = torch.load('/media/raid/astamoulakatos/saved-lstm-models/fifth-round-unfreezed/best-checkpoint-001epoch.pth')
+    checkpoint = torch.load('/media/raid/astamoulakatos/saved-lstm-models/forth-round-unfreezed/best-checkpoint-012epoch.pth')
     model.load_state_dict(checkpoint['model_state_dict'])
     print('loading pretrained freezed model!')
     
@@ -117,13 +118,13 @@ check_freeze(model[1].module)
 lr = 1e-2
 epochs = 15
 optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
-pos_wei = torch.tensor([1, 1, 1.5, 3, 1])
-pos_wei = pos_wei.cuda()
+#pos_wei = torch.tensor([1, 1, 1.5, 3, 1])
+#pos_wei = pos_wei.cuda()
 #criterion = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
-criterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
+#criterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.000001, patience=3)
 #scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)
-
+criterion = LSEPLoss()
 
 if load:
     epochs = 30
@@ -141,6 +142,6 @@ dataloaders = {
 
 save_model_path = '/media/raid/astamoulakatos/saved-lstm-models/'
 device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet2D_LSTM_fifth_unfreezed')
+writer = SummaryWriter('runs/ResNet2D_LSTM_fifth_lsep')
 train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, epochs)
 writer.close()
