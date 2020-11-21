@@ -169,8 +169,11 @@ class LSEP(Function):
             pos_ind = np.array([j for j,pos in enumerate(positive_indices[i]) if pos != 0])
             neg_ind = np.array([j for j,neg in enumerate(negative_indices[i]) if neg != 0])
             
-            one_hot_pos.append(_to_one_hot(torch.from_numpy(pos_ind),input.size()[1]))
-            one_hot_neg.append(_to_one_hot(torch.from_numpy(neg_ind),input.size()[1]))
+#             one_hot_pos.append(_to_one_hot(torch.from_numpy(pos_ind),input.size()[1]))
+#             one_hot_neg.append(_to_one_hot(torch.from_numpy(neg_ind),input.size()[1]))
+            
+            one_hot_pos.append(torch.from_numpy(pos_ind))
+            one_hot_neg.append(torch.from_numpy(neg_ind))
             
         ## grad
         for i in range(grad_input.size()[0]):
@@ -207,7 +210,7 @@ def loss_warp(outputs, labels):
     """
     Sigmoid + WARP loss
     """
-    return WARPLoss()(F.sigmoid(outputs),labels)
+    return WARPLoss()(torch.sigmoid(outputs),labels)
 
 ## LSEP loss
 #-- Log-sum-exp-pairwise loss
@@ -217,4 +220,4 @@ def loss_lsep(outputs, labels):
     """
     Sigmoid + LSEP loss
     """
-    return LSEPLoss()(F.sigmoid(outputs),labels)
+    return LSEPLoss()(torch.sigmoid(outputs),labels)

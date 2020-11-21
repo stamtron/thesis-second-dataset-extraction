@@ -228,13 +228,13 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                     #pos_wei = pos_wei.to(device)
                     #criterion = nn.BCEWithLogitsLoss(weight = wei, pos_weight = pos_wei)
                     if phase == 'train':
-                        loss = criterion(outputs, labels_smo)
+                        loss = criterion(torch.sigmoid(outputs), labels_smo)
                         pos_wei = torch.tensor([1, 1, 1.2, 2, 1])
                         pos_wei = pos_wei.to(device)
                         criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
                         loss_bce = criterion2(outputs, labels_smo)
                     if phase == 'validation':
-                        loss = criterion(outputs, labels)
+                        loss = criterion(torch.sigmoid(outputs), labels)
                         pos_wei = torch.tensor([1, 1, 1.2, 2, 1])
                         pos_wei = pos_wei.to(device)
                         criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
