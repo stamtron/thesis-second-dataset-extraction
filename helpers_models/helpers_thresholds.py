@@ -13,6 +13,61 @@ font = {'family' : 'DejaVu Sans', 'weight' : 'normal', 'size'  : 22}
 plt.rc('font', **font)
 
 
+def case_defined_smart_thresholding(y_pr):
+    for i in range(len(y_pr)):
+        if y_pr[i][0] >= y_pr[i][1]:
+            y_pr[i][0] = 1.0
+            y_pr[i][1] = 0.0
+        else:
+            y_pr[i][0] = 0.0
+            y_pr[i][1] = 1.0
+
+        if y_pr[i][1] == 1.0:
+            y_pr[i][2] = 0.0
+            y_pr[i][3] = 0.0
+            y_pr[i][4] = 0.0
+
+        if y_pr[i][0] == 1.0:
+            if y_pr[i][2] > y_pr[i][3]:
+                y_pr[i][2] = 1.0
+                y_pr[i][3] = 0.0
+            else:
+                y_pr[i][2] = 1.0
+                y_pr[i][3] = 0.0
+
+        if y_pr[i][4] >= 0.85:
+            y_pr[i][4] = 1.0
+            y_pr[i][2] = 0.0
+            y_pr[i][3] = 0.0
+        else:
+            y_pr[i][4] = 0.0
+    
+    return y_pr
+    
+    
+def metrics_after_thresholding(y_true, y_pred, classes):
+    acc = []
+    for idx, event in enumerate(classes):
+        acc.append(accuracy_score(y_true[:,idx], y_pred[:, idx]))
+    acc = np.array(acc) 
+    agg_acc = accuracy_score(y_true, y_pred)
+    precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred)
+    cm=multilabel_confusion_matrix(y_true, y_pred)
+    cmm=cm.reshape(-1,4)
+    
+    res_labels=pd.DataFrame({'Event': classes, 'Exact Matching Score': acc, 'Precision': precision, 'Recall': recall, 'F1-Score': f1})
+    
+    res_labels = pd.concat([res_labels, pd.DataFrame(cmm, columns=['tn', 'fp', 'fn', 'tp'])], axis=1)
+    
+    agg_precision, agg_recall, agg_f1, agg_support = precision_recall_fscore_support(y_true, y_pred, average='samples')
+    agg=pd.DataFrame({'Event': ['Aggregate'], 'Exact Matching Score': agg_acc, 'Precision': agg_precision, 'Recall': agg_recall, 'F1-Score': agg_f1})
+       
+    agg = pd.concat([agg, pd.DataFrame(data=[np.nan]*4, index=['tn', 'fp', 'fn', 'tp']).T], axis=1)
+
+    res=pd.concat([res_labels, agg]).reset_index(drop=True)
+    
+    return res
+
 # we assume that y contains a tuple of y_pred and targets
 def nsea_compute_thresholds(y_true, y_pred, classes):
 #     y_pred = numpy.asarray(y[0])
@@ -46,8 +101,24 @@ def compute_label_metrics(y_true, y_pred, threshold, classes):
     for idx, event in enumerate(classes):
         acc.append(accuracy_score(y_true[:,idx], y_pred[:, idx]))
     acc = np.array(acc) 
+    agg_acc = accuracy_score(y_true, y_pred)
     precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred)
-    return acc, f1
+    cm=multilabel_confusion_matrix(y_true, y_pred)
+    cmm=cm.reshape(-1,4)
+    
+    res_labels=pd.DataFrame({'Event': classes, 'Threshold': threshold, 'Exact Matching Score': acc, 'Precision': precision, 'Recall': recall, 'F1-Score': f1})
+    
+    res_labels = pd.concat([res_labels, pd.DataFrame(cmm, columns=['tn', 'fp', 'fn', 'tp'])], axis=1)
+    
+    agg_precision, agg_recall, agg_f1, agg_support = precision_recall_fscore_support(y_true, y_pred, average='samples')
+    agg=pd.DataFrame({'Event': ['Aggregate'], 'Threshold': [np.nan], 'Exact Matching Score': agg_acc, 'Precision': agg_precision, 'Recall': agg_recall, 'F1-Score': agg_f1})
+    
+    
+    agg = pd.concat([agg, pd.DataFrame(data=[np.nan]*4, index=['tn', 'fp', 'fn', 'tp']).T], axis=1)
+
+    res=pd.concat([res_labels, agg]).reset_index(drop=True)
+    
+    return res
 
 def new_compute_metrics(y_true, y_pred, thresholds, classes):
     #y_pred = y_pred.numpy()
