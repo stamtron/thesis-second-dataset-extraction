@@ -66,10 +66,10 @@ train_loader = DataLoader(
 #train_loader = get_loader(16, 64, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, False)
 df_valid = get_df(df, 20, False, True, False)
 class_image_paths, end_idx, idx_label= get_indices(df_valid, root_dir)
-valid_loader = get_loader(20, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, True, False, True, 1)
+valid_loader, valid_dataset = get_loader(20, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, True, False, True, 1)
 df_test = get_df(df, 20, False, False, True)
 class_image_paths, end_idx, idx_label = get_indices(df_test, root_dir)
-test_loader = get_loader(20, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, True, False, True, 1)
+test_loader, test_dataset = get_loader(20, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, True, False, True, 1)
 
 os.environ['CUDA_VISIBLE_DEVICES']='0,1'
 

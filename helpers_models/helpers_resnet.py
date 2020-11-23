@@ -33,6 +33,7 @@ from sklearn.metrics import multilabel_confusion_matrix, precision_recall_fscore
 import tqdm
 from sklearn.metrics import hamming_loss
 from sklearn.metrics import zero_one_loss
+from more_losses import *
 
 
 # from torch.optim import Adam
@@ -284,13 +285,15 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                     outputs, _ = model(inputs)
                     
                     if phase == 'train':
-                        loss = criterion(torch.sigmoid(outputs), labels_smo)
+                        loss = lsep_loss(outputs, labels)
+                        #loss = criterion(torch.sigmoid(outputs), labels)
                         pos_wei = torch.tensor([1, 1, 1.2, 2, 1])
                         pos_wei = pos_wei.to(device)
                         criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
                         loss_bce = criterion2(outputs, labels_smo)
                     if phase == 'validation':
-                        loss = criterion(torch.sigmoid(outputs), labels)
+                        loss = lsep_loss(outputs, labels)
+                        #loss = criterion(torch.sigmoid(outputs), labels)
                         pos_wei = torch.tensor([1, 1, 1.2, 2, 1])
                         pos_wei = pos_wei.to(device)
                         criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
@@ -300,7 +303,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
-                    scheduler.step(loss)
+                    #scheduler.step(loss)
                     #lrate = scheduler.get_lr()
                     lrate = optimizer.param_groups[0]['lr']
                     lrate = np.array(lrate)
@@ -426,6 +429,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
             epoch_acc = running_acc / len(dataloaders[phase].dataset)
             epoch_f1 = running_f1 / len(dataloaders[phase].dataset)
+
             print('COUNTER = ')
             print(counter)
             
@@ -440,6 +444,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 val_losses.append(epoch_loss)
                 val_acc.append(epoch_acc)
                 val_f1.append(epoch_f1)
+                scheduler.step(epoch_loss)
                 
                 if epoch_loss < val_loss:
                     val_loss = epoch_loss

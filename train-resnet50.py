@@ -90,10 +90,10 @@ print(len(train_loader))
 #######################################################################################
 df_valid = get_df(df, 20, False, True, False)
 class_image_paths, end_idx, idx_label = get_indices(df_valid, root_dir)
-valid_loader = get_loader(1, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, True, 1)
+valid_loader, valid_dataset = get_loader(1, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, True, 1)
 df_test = get_df(df, 20, False, False, True)
 class_image_paths, end_idx, idx_label = get_indices(df_test, root_dir)
-test_loader = get_loader(1, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, True, 1)
+test_loader, test_dataset = get_loader(1, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, True, 1)
 
 torch.cuda.empty_cache()
 

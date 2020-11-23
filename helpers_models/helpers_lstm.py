@@ -244,7 +244,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
-                    scheduler.step(loss)
+                    #scheduler.step(loss)
                     lrate = optimizer.param_groups[0]['lr']
                     lrate = np.array(lrate)
 
@@ -380,6 +380,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 val_losses.append(epoch_loss)
                 val_acc.append(epoch_acc)
                 val_f1.append(epoch_f1)
+                scheduler.step(epoch_loss)
                 
                 if epoch_loss < val_loss:
                     val_loss = epoch_loss
