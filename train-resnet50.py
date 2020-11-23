@@ -9,6 +9,7 @@ from helpers_resnet import *
 from focal_loss_2 import *
 from load_data_and_augmentations import *
 from imbalanced_sampler_3 import MultilabelBalancedRandomSampler
+from warp_lsep import *
 
 resnet = torchvision.models.resnet50(pretrained=True)
 adaptive_pooling = AdaptiveConcatPool2d()
@@ -16,7 +17,7 @@ head = Head()
 resnet.avgpool = adaptive_pooling
 resnet.fc = head
 
-os.environ['CUDA_VISIBLE_DEVICES']='0,1,2'
+os.environ['CUDA_VISIBLE_DEVICES']='0,1,2,3'
 
 resnet = resnet.cuda()
 
@@ -43,6 +44,7 @@ valid_temp_transform = va.TemporalFit(size=16)
 root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
 df = pd.read_csv('./important_csvs/more_balanced_dataset/small_stratified.csv')
 ###################################################################################
+bs = 40
 df_train = get_df(df, 20, True, False, False)
 class_image_paths, end_idx, idx_label = get_indices(df_train, root_dir)
 #train_loader = get_loader(1, 32, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, True)
@@ -68,7 +70,7 @@ dataset = MyDataset(
         image_paths = class_image_paths,
         seq_length = seq_length,
         temp_transform = valid_temp_transform,
-        spat_transform = valid_spat_transform,
+        spat_transform = train_spat_transform,
         tensor_transform = tensor_transform,
         length = len(train_sampler),
         lstm = False,
@@ -77,7 +79,7 @@ dataset = MyDataset(
         multi = 1)
 train_loader = DataLoader(
         dataset,
-        batch_size = 30,
+        batch_size = bs,
         sampler = train_sampler,
         drop_last = True,
         num_workers = 0)
@@ -88,16 +90,16 @@ print(len(train_loader))
 #######################################################################################
 df_valid = get_df(df, 20, False, True, False)
 class_image_paths, end_idx, idx_label = get_indices(df_valid, root_dir)
-valid_loader = get_loader(1, 30, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, True, 1)
+valid_loader = get_loader(1, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, True, 1)
 df_test = get_df(df, 20, False, False, True)
 class_image_paths, end_idx, idx_label = get_indices(df_test, root_dir)
-test_loader = get_loader(1, 150, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, True, 1)
+test_loader = get_loader(1, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, True, True, 1)
 
 torch.cuda.empty_cache()
 
 load = True
 if load:
-    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-resnet-models/forth-small/best-checkpoint-008epoch.pth')
+    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-resnet-models/fifth-small-aug-final/best-checkpoint-010epoch.pth')
     resnet.load_state_dict(checkpoint['model_state_dict'])
     print('loading pretrained freezed model!')
     
@@ -115,12 +117,14 @@ if load:
 lr = 1e-2
 epochs = 15
 optimizer = optim.AdamW(resnet.parameters(), lr=lr, weight_decay=1e-2)
-pos_wei = torch.tensor([1, 1, 1.5, 1.5, 1])
-pos_wei = pos_wei.cuda()
+#pos_wei = torch.tensor([1, 1, 1.5, 1.5, 1])
+#pos_wei = pos_wei.cuda()
 #criterion = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
-criterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
+#riterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.000001, patience=3)
 #scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)
+
+criterion = LSEPLoss()
 
 dataloaders = {
     "train": train_loader,
@@ -138,6 +142,6 @@ if load:
     
 save_model_path = '/media/scratch/astamoulakatos/saved-resnet-models/'
 device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet2D_focal_small_data_unfreezed_forth_aug')
+writer = SummaryWriter('runs/ResNet2D_sisxth_lsep')
 train_model_yo(save_model_path, dataloaders, device, resnet, criterion, optimizer, scheduler, writer, epochs)
 writer.close()

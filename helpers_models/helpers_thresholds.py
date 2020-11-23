@@ -101,6 +101,17 @@ def compute_label_metrics(y_true, y_pred, threshold, classes):
     for idx, event in enumerate(classes):
         acc.append(accuracy_score(y_true[:,idx], y_pred[:, idx]))
     acc = np.array(acc) 
+    precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred)
+    return acc, f1
+
+
+def compute_label_metrics_validation(y_true, y_pred, threshold, classes):
+    for idx, event_type in enumerate(classes):
+        y_pred[:,idx] = np.where(y_pred[:,idx] >= threshold, 1, 0)
+    acc = []
+    for idx, event in enumerate(classes):
+        acc.append(accuracy_score(y_true[:,idx], y_pred[:, idx]))
+    acc = np.array(acc) 
     agg_acc = accuracy_score(y_true, y_pred)
     precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred)
     cm=multilabel_confusion_matrix(y_true, y_pred)
