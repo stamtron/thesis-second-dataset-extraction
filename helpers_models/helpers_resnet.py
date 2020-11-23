@@ -269,6 +269,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
             running_zero_one = 0.0
             running_hamming_loss = 0.0
             running_loss_bce = 0.0
+            running_jac = 0
             y_true = []
             y_pred = []
             #train_result = []
@@ -276,19 +277,24 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 inputs = inputs.to(device)
                 #lab = labels
                 labels = labels.to(device)
+                label_smoothing = 0.1
+                labels_smo = labels * (1 - label_smoothing) + 0.5 * label_smoothing
                 
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs, _ = model(inputs)
-                    loss = criterion(outputs, labels)
-                    #no_of_classes = 5
-                    #beta = 0.99
-                   # samples_per_cls = [46.9, 12.2, 16, 10.8, 14.1]
-                    #wei = CB_weights(lab, samples_per_cls, no_of_classes, beta)
-                   # wei = wei.to(device)
-                    pos_wei = torch.tensor([1, 1, 1, 1, 1])
-                    pos_wei = pos_wei.to(device)
-                    criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
-                    loss_bce = criterion2(outputs, labels)
+                    
+                    if phase == 'train':
+                        loss = criterion(torch.sigmoid(outputs), labels_smo)
+                        pos_wei = torch.tensor([1, 1, 1.2, 2, 1])
+                        pos_wei = pos_wei.to(device)
+                        criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
+                        loss_bce = criterion2(outputs, labels_smo)
+                    if phase == 'validation':
+                        loss = criterion(torch.sigmoid(outputs), labels)
+                        pos_wei = torch.tensor([1, 1, 1.2, 2, 1])
+                        pos_wei = pos_wei.to(device)
+                        criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
+                        loss_bce = criterion2(outputs, labels)
         
                 if phase == 'train':
                     optimizer.zero_grad()
@@ -314,6 +320,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 running_hamming_loss += zero_one_loss(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
                 running_f1_micro += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="micro")  *  inputs.size(0)
                 running_f1_macro += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="macro")  *  inputs.size(0)
+                running_jac += jaccard_score(y.numpy(), pred.numpy(), average="samples")  *  inputs.size(0)
                 
                 if (counter!=0) and (counter%20==0):
                     if phase == 'train':
@@ -335,6 +342,9 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                         writer.add_scalar('training FJ f1', f1_labels[2], epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('training And f1', f1_labels[3], epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('training FS f1', f1_labels[4], epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training jaccard score', 
+                                        running_jac/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter) 
                         writer.add_scalar('training bce loss',
                                         running_loss_bce/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
@@ -393,7 +403,9 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                         writer.add_scalar('validation zero one loss',
                                         running_zero_one/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
-                        
+                        writer.add_scalar('validation jaccard score', 
+                                        running_jac/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter) 
                         classes = ['Exposure', 'Burial', 'Field Joint', 'Anode', 'Free Span']
                         y_tr = np.vstack([t.__array__() for tensor in y_true for t in tensor])
                         y_pr = np.vstack([t.__array__() for tensor in y_pred for t in tensor])
