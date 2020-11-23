@@ -160,5 +160,5 @@ def get_loader(seq_length, bs, end_idx, class_image_paths, temp_transform, spat_
         sampler = sampler,
         drop_last = True,
         num_workers = 0)
-    return loader
+    return loader, dataset
 
