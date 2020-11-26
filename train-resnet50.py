@@ -17,7 +17,7 @@ head = Head()
 resnet.avgpool = adaptive_pooling
 resnet.fc = head
 
-os.environ['CUDA_VISIBLE_DEVICES']='0,1,2,3'
+os.environ['CUDA_VISIBLE_DEVICES']='0,1' #,2,3'
 
 resnet = resnet.cuda()
 
@@ -36,7 +36,7 @@ check_freeze(resnet.module)
 #summary(resnet.module, torch.zeros(2,3,576,704).cuda())
 
 tensor_transform = get_tensor_transform('ImageNet', False)
-train_spat_transform = get_spatial_transform(2)
+train_spat_transform = get_spatial_transform(3)
 train_temp_transform = get_temporal_transform()
 valid_spat_transform = get_spatial_transform(2)
 valid_temp_transform = va.TemporalFit(size=16)
@@ -44,7 +44,7 @@ valid_temp_transform = va.TemporalFit(size=16)
 root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
 df = pd.read_csv('./important_csvs/more_balanced_dataset/small_stratified.csv')
 ###################################################################################
-bs = 40
+bs = 20
 df_train = get_df(df, 20, True, False, False)
 class_image_paths, end_idx, idx_label = get_indices(df_train, root_dir)
 #train_loader = get_loader(1, 32, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, True)
@@ -52,7 +52,7 @@ seq_length = 1
 indices = []
 for i in range(len(end_idx) - 1):
     start = end_idx[i]
-    end = end_idx[i + 1] - seq_length
+    end = end_idx[i + 1] - seq_length - 20
     if start > end:
         pass
     else:
@@ -115,12 +115,12 @@ if load:
     check_freeze(resnet.module)
 
 lr = 1e-2
-epochs = 15
+epochs = 20
 optimizer = optim.AdamW(resnet.parameters(), lr=lr, weight_decay=1e-2)
 #pos_wei = torch.tensor([1, 1, 1.5, 1.5, 1])
 #pos_wei = pos_wei.cuda()
 #criterion = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
-#riterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
+#criterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.000001, patience=3)
 #scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=lr, steps_per_epoch=len(train_loader), epochs=epochs)
 
@@ -132,16 +132,16 @@ dataloaders = {
 }
 
 if load:
-    epochs = 15
+    epochs = 20
     optimizer = optim.AdamW(resnet.parameters(), lr=lr, weight_decay=1e-2)
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    lr = 1e-04
+    lr = 1e-05
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.000001, patience=3)
     
 save_model_path = '/media/scratch/astamoulakatos/saved-resnet-models/'
 device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet2D_sisxth_lsep')
+writer = SummaryWriter('runs/ResNet2D_sisxth_lsep_vol2')
 train_model_yo(save_model_path, dataloaders, device, resnet, criterion, optimizer, scheduler, writer, epochs)
 writer.close()

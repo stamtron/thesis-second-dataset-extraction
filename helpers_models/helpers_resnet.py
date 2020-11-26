@@ -136,7 +136,28 @@ class Head(torch.nn.Module):
         self.headbn2 = nn.BatchNorm1d(512)
         self.headdr2 = nn.Dropout(p=0.5)
         self.fc2 = nn.Linear(512,5)
-
+        
+    def forward(self, x):
+        x = self.headbn1(x)
+        x = self.fc1(x)
+        x = self.headre1(x)
+        x = self.headbn2(x)
+        x_512 = x
+        x = self.fc2(x)
+        return x, x_512
+    
+    
+class HeadBR(torch.nn.Module):
+    def __init__(self):
+        super(HeadBR, self).__init__()
+        self.flatten = Flatten()
+        self.headbn1 = nn.BatchNorm1d(4096)
+        self.headdr1 = nn.Dropout(p=0.25)
+        self.fc1 = nn.Linear(4096, 512) #num_classes)
+        self.headre1 = nn.ReLU(inplace=True)
+        self.headbn2 = nn.BatchNorm1d(512)
+        self.headdr2 = nn.Dropout(p=0.5)
+        self.fc2 = nn.Linear(512,1)
 
     def forward(self, x):
         x = self.headbn1(x)
@@ -146,6 +167,7 @@ class Head(torch.nn.Module):
         x_512 = x
         x = self.fc2(x)
         return x, x_512
+    
     
 def load_data(df, bs, seq_length):
     root_dir = '/media/hdd/astamoulakatos/nsea_video_jpegs/'
@@ -243,6 +265,232 @@ def nsea_compute_thresholds(y):
     return result
 
 
+def train_models_binary_relevance(save_model_path, dataloaders, device, model, criterion, optimizer,
+                                  scheduler, writer, l, br=True, smoothing=True, num_epochs=6):
+    model = model.to(device)
+    val_loss = 100
+    
+    val_losses = []
+    val_acc = []
+    val_f1 = []
+    train_losses = []
+    train_acc = []
+    train_f1 = []
+    for epoch in range(num_epochs):
+        logs = {}
+        for phase in ['train', 'validation']:
+            if phase == 'train':
+                model.train()
+            else:
+                model.eval()
+
+            running_loss = 0.0
+            running_acc = 0.0  
+            running_f1 = 0.0
+            running_f1_micro = 0.0
+            running_f1_macro = 0.0
+            running_zero_one = 0.0
+            running_hamming_loss = 0.0
+            running_loss_bce = 0.0
+            running_jac = 0
+            y_true = []
+            y_pred = []
+            #train_result = []
+            for counter, (inputs, labels) in enumerate(Bar(dataloaders[phase])):
+                inputs = inputs.to(device)
+                #lab = labels
+                labels = labels.to(device)
+                
+                if br:
+                    labels = labels.transpose(0,1)
+                    lab_one = labels[l] # we use l to get one label every time
+                    lab_one = lab_one.unsqueeze(0)
+                
+                if smoothing:
+                    label_smoothing = 0.1
+                    lab_one_smo = lab_one * (1 - label_smoothing) + 0.5 * label_smoothing
+                    
+                with torch.set_grad_enabled(phase == 'train'):
+                    outputs, _ = model(inputs)
+                    outputs = outputs.transpose(0,1)
+                    
+                    if phase == 'train':
+                        #loss = lsep_loss(outputs, labels)
+                        loss = criterion(outputs, lab_one_smo)
+                        #pos_wei = torch.tensor([1, 1, 1.2, 2, 1])
+                        #pos_wei = pos_wei.to(device)
+                        #criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
+                        #loss_bce = criterion2(outputs, labels_smo)
+                    if phase == 'validation':
+                        #loss = lsep_loss(outputs, labels)
+                        loss = criterion(outputs, lab_one_smo)
+                        #pos_wei = torch.tensor([1, 1, 1.2, 2, 1])
+                        #pos_wei = pos_wei.to(device)
+                        #criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
+                        #loss_bce = criterion2(outputs, labels)
+        
+                if phase == 'train':
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+                    #scheduler.step(loss)
+                    #lrate = scheduler.get_lr()
+                    lrate = optimizer.param_groups[0]['lr']
+                    lrate = np.array(lrate)
+
+                preds = torch.sigmoid(outputs).data > 0.5
+                preds = preds.to(torch.float32) 
+                y = lab_one.detach().cpu()
+                pred = preds.detach().cpu()
+                y_pred.append(pred)
+                y_true.append(y)
+#                 print(y)
+#                 print(pred)
+                #pred = (pred>0.5).float()
+                
+                #running_loss_bce += loss_bce.item() * inputs.size(0)
+                running_loss += loss.item() * inputs.size(0)
+                running_acc += accuracy_score(y.numpy(), pred.numpy()) *  inputs.size(0)
+                running_f1 += f1_score(y.numpy(), pred.numpy(), average="samples")  *  inputs.size(0)
+                running_zero_one += hamming_loss(y.numpy(), pred.numpy()) *  inputs.size(0)
+                running_hamming_loss += zero_one_loss(y.numpy(), pred.numpy()) *  inputs.size(0)
+                running_f1_micro += f1_score(y.numpy(), pred.numpy(), average="micro")  *  inputs.size(0)
+                running_f1_macro += f1_score(y.numpy(), pred.numpy(), average="macro")  *  inputs.size(0)
+                running_jac += jaccard_score(y.numpy(), pred.numpy(), average="samples")  *  inputs.size(0)
+                
+                if (counter!=0) and (counter%20==0):
+                    if phase == 'train':
+                        result = '  Training Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(running_loss/(inputs.size(0)*counter),
+                                                                                         running_acc/(inputs.size(0)*counter),
+                                                                                         running_f1/(inputs.size(0)*counter))
+                        print(result)
+                        classes = ['Exposure', 'Burial', 'Field Joint', 'Anode', 'Free Span']
+                     
+                        print(classes[l])
+                        writer.add_scalar('training jaccard score', 
+                                        running_jac/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter) 
+                        writer.add_scalar('training bce loss',
+                                        running_loss_bce/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training focal loss',
+                                        running_loss/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training acc',
+                                        running_acc/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training f1 samples',
+                                        running_f1/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training f1 micro',
+                                        running_f1_micro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training f1 macro',
+                                        running_f1_macro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training hamming loss',
+                                        running_hamming_loss/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training zero one loss',
+                                        running_zero_one/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('learning rate', lrate, epoch * len(dataloaders[phase]) + counter)
+                        
+                        y_true = []
+                        y_pred = []
+                        
+                    if phase == 'validation':
+                        result = '  Validation Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(running_loss/(inputs.size(0)*counter),
+                                                                                         running_acc/(inputs.size(0)*counter),
+                                                                                         running_f1/(inputs.size(0)*counter))
+                        print(result)
+                        classes = ['Exposure', 'Burial', 'Field Joint', 'Anode', 'Free Span']
+                        print(classes[l])
+                        writer.add_scalar('validation bce loss',
+                                        running_loss_bce/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation focal loss',
+                                        running_loss/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation acc',
+                                        running_acc/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation f1 samples',
+                                        running_f1/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation f1 micro',
+                                        running_f1_micro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation f1 macro',
+                                        running_f1_macro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation hamming loss',
+                                        running_hamming_loss/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation zero one loss',
+                                        running_zero_one/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation jaccard score', 
+                                        running_jac/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter) 
+                        
+      
+                        y_true = []
+                        y_pred = []
+                        
+            epoch_loss = running_loss / len(dataloaders[phase].dataset)
+            epoch_acc = running_acc / len(dataloaders[phase].dataset)
+            epoch_f1 = running_f1 / len(dataloaders[phase].dataset)
+
+            print('COUNTER = ')
+            print(counter)
+            
+            if phase == 'train':
+                train_losses.append(epoch_loss)
+                train_acc.append(epoch_acc)
+                train_f1.append(epoch_f1)
+            
+            #prefix = ''
+            if phase == 'validation':
+                #prefix = 'val_'
+                val_losses.append(epoch_loss)
+                val_acc.append(epoch_acc)
+                val_f1.append(epoch_f1)
+                scheduler.step(epoch_loss)
+                
+                if epoch_loss < val_loss:
+                    val_loss = epoch_loss
+                    save_path = f'{save_model_path}best-checkpoint-{str(epoch).zfill(3)}epoch.pth'
+                    states = {  'model_state_dict': model.state_dict(),
+                                'optimizer_state_dict': optimizer.state_dict(),
+                                'scheduler_state_dict': scheduler.state_dict(),
+                                'val_loss': epoch_loss,
+                                'epoch': epoch,  }
+                    
+                    torch.save(states, save_path)
+                    for path in sorted(glob.glob(f'{save_model_path}best-checkpoint-*epoch.pth'))[:-3]:
+                        os.remove(path)
+                
+#             logs[prefix + 'log loss'] = epoch_loss.item()
+#             logs[prefix + 'accuracy'] = epoch_acc.item()
+#             logs[prefix + 'f1_score'] = epoch_f1.item()
+            
+#         liveloss.update(logs)
+#         liveloss.send()
+        with open("resnet_val_losses.txt", "wb") as fp:   #Pickling
+            pickle.dump(val_losses, fp)
+        with open("resnet_val_acc.txt", "wb") as fp:   #Pickling
+            pickle.dump(val_acc, fp)
+        with open("resnet_val_f1.txt", "wb") as fp:   #Pickling
+            pickle.dump(val_f1, fp)
+        with open("resnet_train_losses.txt", "wb") as fp:   #Pickling
+            pickle.dump(train_losses, fp)
+        with open("resnet_train_acc.txt", "wb") as fp:   #Pickling
+            pickle.dump(train_acc, fp)
+        with open("resnet_train_f1.txt", "wb") as fp:   #Pickling
+            pickle.dump(train_f1, fp)
+
+
 def train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, num_epochs=6):
     #liveloss = PlotLosses()
     model = model.to(device)
@@ -280,24 +528,24 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 labels = labels.to(device)
                 label_smoothing = 0.1
                 labels_smo = labels * (1 - label_smoothing) + 0.5 * label_smoothing
-                
+                    
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs, _ = model(inputs)
                     
                     if phase == 'train':
-                        loss = lsep_loss(outputs, labels)
-                        #loss = criterion(torch.sigmoid(outputs), labels)
-                        pos_wei = torch.tensor([1, 1, 1.2, 2, 1])
-                        pos_wei = pos_wei.to(device)
-                        criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
-                        loss_bce = criterion2(outputs, labels_smo)
+                        #loss = lsep_loss(outputs, labels)
+                        loss = criterion(outputs, labels)
+                        #pos_wei = torch.tensor([1, 1, 1.2, 2, 1])
+                        #pos_wei = pos_wei.to(device)
+                        #criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
+                        #loss_bce = criterion2(outputs, labels_smo)
                     if phase == 'validation':
-                        loss = lsep_loss(outputs, labels)
-                        #loss = criterion(torch.sigmoid(outputs), labels)
-                        pos_wei = torch.tensor([1, 1, 1.2, 2, 1])
-                        pos_wei = pos_wei.to(device)
-                        criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
-                        loss_bce = criterion2(outputs, labels)
+                        #loss = lsep_loss(outputs, labels)
+                        loss = criterion(outputs, labels)
+                        #pos_wei = torch.tensor([1, 1, 1.2, 2, 1])
+                        #pos_wei = pos_wei.to(device)
+                        #criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
+                        #loss_bce = criterion2(outputs, labels)
         
                 if phase == 'train':
                     optimizer.zero_grad()
