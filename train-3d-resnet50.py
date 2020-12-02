@@ -18,7 +18,7 @@ options = {
     "n_classes": 400,
     "n_finetune_classes": 5,
     "resnet_shortcut": 'B',
-    "sample_size": (576,704), #(288,352),
+    "sample_size": (288,352), #,(576,704), #(288,352),
     "sample_duration": 16,
     "pretrain_path": '../3D-ResNets-PyTorch/resnet-50-kinetics.pth',
     "no_cuda": False,
@@ -33,7 +33,7 @@ myopts = opts(**options)
 model, parameters = generate_model(myopts)
 
 adaptive_pooling = AdaptiveConcatPool3d()
-os.environ['CUDA_VISIBLE_DEVICES']='0,1,2'
+os.environ['CUDA_VISIBLE_DEVICES']='0,1,2,3'
 #torch.cuda.empty_cache()
 device = torch.device('cuda') 
 head = Head()
@@ -53,12 +53,12 @@ for param in model.module.fc.parameters():
 
 load = True
 if load:
-    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-3d-models/forth-small/best-checkpoint-014epoch.pth')
+    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-3d-models/second/best-checkpoint-000epoch.pth')
     model.load_state_dict(checkpoint['model_state_dict'])
     print('loading pretrained freezed model!')
 
     for param in model.module.parameters():
-        param.requires_grad = True
+        param.requires_grad = False
         
     for param in model.module.fc.parameters():
         param.requires_grad = True
@@ -80,7 +80,7 @@ root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
 df = pd.read_csv('./important_csvs/more_balanced_dataset/small_stratified.csv')
 
 ################################################################## Make function for that junk of code
-bs = 6
+bs = 20
 df_train = get_df(df, 20, True, False, False)
 class_image_paths, end_idx, idx_label = get_indices(df_train, root_dir)
 seq_length = 20
@@ -96,7 +96,7 @@ indices = torch.cat(indices)
 indices = indices[torch.randperm(len(indices))]
 labels = []
 for i in class_image_paths:
-    labels.append(i[1])
+    labels.append(i[2])
 labels = np.array(labels)
 train_sampler = MultilabelBalancedRandomSampler(
     labels, indices, class_choice="least_sampled"
@@ -104,8 +104,8 @@ train_sampler = MultilabelBalancedRandomSampler(
 dataset = MyDataset(
         image_paths = class_image_paths,
         seq_length = seq_length,
-        temp_transform = valid_temp_transform,
-        spat_transform = valid_spat_transform,
+        temp_transform = train_temp_transform,
+        spat_transform = train_spat_transform,
         tensor_transform = tensor_transform,
         length = len(train_sampler),
         lstm = False,
@@ -123,15 +123,15 @@ train_loader = DataLoader(
 #train_loader = get_loader(16, 64, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, False)
 df_valid = get_df(df, 20, False, True, False)
 class_image_paths, end_idx, idx_label= get_indices(df_valid, root_dir)
-valid_loader = get_loader(20, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False, True, 1)
+valid_loader, valid_dataset = get_loader(20, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False, True, 1)
 df_test = get_df(df, 20, False, False, True)
 class_image_paths, end_idx, idx_label = get_indices(df_test, root_dir)
-test_loader = get_loader(20, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False, True, 1)
+test_loader, test_dataset = get_loader(20, bs, end_idx, class_image_paths, valid_temp_transform, valid_spat_transform, tensor_transform, False, False, True, 1)
 
 lr = 1e-2
-epochs = 15
+epochs = 30
 optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
-pos_wei = torch.tensor([1, 1, 1, 1, 1])
+pos_wei = torch.tensor([1, 1, 1.5, 3, 1])
 pos_wei = pos_wei.cuda()
 #criterion = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
 criterion = FocalLoss2d(weight=pos_wei,reduction='mean',balance_param=1)
@@ -140,7 +140,7 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', fa
 torch.cuda.empty_cache()
 
 if load:
-    epochs = 15
+    epochs = 20
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     lr = 1e-3
@@ -157,7 +157,7 @@ dataloaders = {
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 save_model_path = '/media/scratch/astamoulakatos/saved-3d-models/'
 #device = torch.device('cuda')
-writer = SummaryWriter('runs/ResNet3D_forth_small')
+writer = SummaryWriter('runs/ResNet3D_third_newsampler')
 train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, num_epochs=epochs)
 writer.close()
 

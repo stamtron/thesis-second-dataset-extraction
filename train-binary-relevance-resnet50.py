@@ -46,7 +46,7 @@ valid_temp_transform = va.TemporalFit(size=16)
 root_dir = '/media/scratch/astamoulakatos/nsea_video_jpegs/'
 df = pd.read_csv('./important_csvs/more_balanced_dataset/small_stratified.csv')
 ###################################################################################
-bs = 20
+bs = 100
 df_train = get_df(df, 20, True, False, False)
 class_image_paths, end_idx, idx_label = get_indices(df_train, root_dir)
 #train_loader = get_loader(1, 32, end_idx, class_image_paths, train_temp_transform, train_spat_transform, tensor_transform, False, True)
@@ -107,7 +107,7 @@ dataloaders = {
     "validation": valid_loader
 }
 
-
+device = torch.device('cuda')
 save_models_paths = ['/media/scratch/astamoulakatos/saved-binary-resnets/exposure/', '/media/scratch/astamoulakatos/saved-binary-resnets/burial/',
                     '/media/scratch/astamoulakatos/saved-binary-resnets/fieldjoint/', '/media/scratch/astamoulakatos/saved-binary-resnets/anode/',
                     '/media/scratch/astamoulakatos/saved-binary-resnets/freespan/']
@@ -127,5 +127,5 @@ for l in range(5):
     train_models_binary_relevance(save_models_paths[l], dataloaders, device, resnets[l],
                                   criterion, optimizer, scheduler, writer, l, True, True, epochs)
     writer.close()
-    del resnets[l]
+    d#el resnets[l]
     torch.cuda.empty_cache()

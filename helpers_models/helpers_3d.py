@@ -172,6 +172,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
             running_zero_one = 0.0
             running_hamming_loss = 0.0
             running_loss_bce = 0.0
+            running_f1_wei = 0.0
             y_true = []
             y_pred = []
             #train_result = []
@@ -179,7 +180,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 inputs = inputs.to(device)
                 #lab = labels
                 labels = labels.to(device)
-                label_smoothing = 0.03
+                label_smoothing = 0.1
                 labels_smo = labels * (1 - label_smoothing) + 0.5 * label_smoothing
                 
                 with torch.set_grad_enabled(phase == 'train'):
@@ -192,19 +193,27 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                     #pos_wei = torch.tensor([100/46.9, 100/12.2, 100/16, 100/10.8, 100/14.1])
                     #pos_wei = pos_wei.to(device)
                     #criterion = nn.BCEWithLogitsLoss(weight = wei, pos_weight = pos_wei)
-                    loss = criterion(outputs, labels_smo)
-                    pos_wei = torch.tensor([1, 1, 1, 1, 1])
-                    pos_wei = pos_wei.to(device)
-                    criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
-                    loss_bce = criterion2(outputs, labels_smo)
-
+                    if phase == 'train':
+                        loss = criterion(outputs, labels_smo)
+                        pos_wei = torch.tensor([1, 1, 1.5, 3, 1])
+                        pos_wei = pos_wei.to(device)
+                        criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
+                        loss_bce = criterion2(outputs, labels_smo)
+                    if phase == 'validation':
+                        loss = criterion(outputs, labels)
+                        pos_wei = torch.tensor([1, 1, 1.5, 3, 1])
+                        pos_wei = pos_wei.to(device)
+                        criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
+                        loss_bce = criterion2(outputs, labels)
+                        
                 if phase == 'train':
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
-                    scheduler.step(loss)
+                    #scheduler.step(loss)
                     lrate = optimizer.param_groups[0]['lr']
                     lrate = np.array(lrate)
+
 
                 preds = torch.sigmoid(outputs).data > 0.5
                 preds = preds.to(torch.float32) 
@@ -221,6 +230,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 running_hamming_loss += hamming_loss(y.numpy(), pred.numpy()) *  inputs.size(0)
                 running_f1_micro += f1_score(y.numpy(), pred.numpy(), average="micro")  *  inputs.size(0)
                 running_f1_macro += f1_score(y.numpy(), pred.numpy(), average="macro")  *  inputs.size(0)
+                running_f1_wei += f1_score(y.numpy(), pred.numpy(), average="weighted")  *  inputs.size(0)
            
                 if (counter!=0) and (counter%10==0):
                     if phase == 'train':
@@ -260,6 +270,9 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                         writer.add_scalar('training f1 macro',
                                         running_f1_macro/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training f1 weighted',
+                                        running_f1_wei/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('training hamming loss',
                                         running_hamming_loss/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
@@ -292,6 +305,9 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                                         epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('validation f1 macro',
                                         running_f1_macro/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation f1 weighted',
+                                        running_f1_wei/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('validation hamming loss',
                                         running_hamming_loss/(inputs.size(0)*counter),
@@ -331,6 +347,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 val_losses.append(epoch_loss)
                 val_acc.append(epoch_acc)
                 val_f1.append(epoch_f1)
+                scheduler.step(epoch_loss)
                 
                 if epoch_loss < val_loss:
                     val_loss = epoch_loss
