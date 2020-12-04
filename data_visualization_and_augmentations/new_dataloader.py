@@ -33,7 +33,7 @@ def imshow(inp, title=None):
     plt.pause(0.001)  # pause a bit so that plots are updated 
 
 
-def show_batch(loader, bs, resnet3d=False):
+def show_batch(loader, bs, resnet3d=False, nrows = 4):
     class_names = ['exp_and','exp_fs','exp','exp_fj','bur']
     one_hot_classes = [[1,0,0,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,1,0,0],[0,1,0,0,0]]
     inputs, classes = next(iter(loader))
@@ -42,7 +42,7 @@ def show_batch(loader, bs, resnet3d=False):
             inputs = inputs.permute(0,2,1,3,4)
     for j in range(bs):
         # Make a grid from batch
-        out = torchvision.utils.make_grid(inputs[j], nrow=int(inputs.shape[1]/3))
+        out = torchvision.utils.make_grid(inputs[j], nrow=4) #int(inputs.shape[1]/3))
         for i, f in enumerate(one_hot_classes):
             if np.array_equal(classes[j].numpy(), np.asarray(f)):
                 title = class_names[i]
@@ -60,6 +60,19 @@ class MySampler(torch.utils.data.Sampler):
                 pass
             else:
                 indices.append(torch.arange(start, end))
+        indices = torch.cat(indices)
+        self.indices = indices
+        
+    def __iter__(self):
+        indices = self.indices[torch.randperm(len(self.indices))]
+        return iter(indices.tolist())
+    
+    def __len__(self):
+        return len(self.indices)
+    
+    
+class MyRandomSampler(torch.utils.data.Sampler):
+    def __init__(self, indices):
         indices = torch.cat(indices)
         self.indices = indices
         
