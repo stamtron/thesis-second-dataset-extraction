@@ -152,36 +152,69 @@ def get_indices(df, root_dir):
     return class_image_paths, end_idx, idx_label
 
 
-def get_final_indices(idx_label, end_idx, window, set_step=1, seq_length=20, per_label=False):
+def get_final_indices(idx_label, end_idx, window, skip_frames=15, set_step=25, seq_length=50, per_label=True):
     indices = []
     labels = []
     if per_label:
         for i in range(len(end_idx) - 1):
-            start = end_idx[i]
-            end = end_idx[i + 1] - seq_length
+            start = end_idx[i] 
+            end = end_idx[i + 1] -seq_length
+            if (end-start-2*skip_frames>50): 
+                start = end_idx[i] + skip_frames
+                end = end_idx[i + 1] - skip_frames - seq_length
             label = idx_label[i]
             if end > start:
                 if (label == 'bur') or (label == 'exp') or (label == 'exp_fs'):
                     step = seq_length
-                if (label == 'exp_and') or (label == 'exp_fj'):
-                    step = set_step
+                if (label == 'exp_fj'):
+                    step = int(set_step*(3/2))
+                if (label == 'exp_and'):
+                    step = int(set_step/2)
                 ind = torch.arange(start, end, step)
                 indices.append(ind)
                 labels.append(label)
     else:
         for i in range(len(end_idx) - 1):
-            start = end_idx[i]
-            end = end_idx[i + 1] - seq_length
+            start = end_idx[i] 
+            end = end_idx[i + 1] -seq_length
+            if (end-start-2*skip_frames>50): 
+                start = end_idx[i] + skip_frames
+                end = end_idx[i + 1] - skip_frames - seq_length
             label = idx_label[i]
             if end > start:
                 if window=='nei':
                     step = seq_length
                 if window=='sli':
                     step = set_step
+                if window=='overlap':
+                    step = int(seq_length/2)
                 ind = torch.arange(start, end, step)
                 indices.append(ind)
                 labels.append(label)
     return indices, labels
+
+
+def get_final_indices_2d(idx_label, end_idx, skip_frames=15, set_step=4, seq_length=1):
+    indices = []
+    labels = []
+    for i in range(len(end_idx) - 1):
+        start = end_idx[i] 
+        end = end_idx[i + 1] -seq_length
+        if (end-start-2*skip_frames>50): 
+            start = end_idx[i] + skip_frames
+            end = end_idx[i + 1] - skip_frames - seq_length
+        label = idx_label[i]
+        if end > start:
+            if (label == 'bur') or (label == 'exp') or (label == 'exp_fs'):
+                step = set_step*2
+            if (label == 'exp_fj'):
+                step = int(set_step*(3/2))
+            if (label == 'exp_and'):
+                step = int(set_step/2)
+            ind = torch.arange(start, end, step)
+            indices.append(ind)
+            labels.append(label)
+    return indices, labels     
 
 def get_loader(seq_length, bs, end_idx, class_image_paths, temp_transform, spat_transform, tensor_transform, lstm, oned, augment, multi):
     sampler = MySampler(end_idx, seq_length)
