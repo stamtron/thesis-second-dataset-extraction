@@ -36,7 +36,11 @@ check_freeze(resnet.module)
 #summary(resnet.module, torch.zeros(2,3,576,704).cuda())
 
 tensor_transform = get_tensor_transform('ImageNet', False)
+<<<<<<< HEAD
 train_spat_transform = get_spatial_transform(1)
+=======
+train_spat_transform = get_spatial_transform(3)
+>>>>>>> 85aa5ff558285dffcdf67d1a7a6679627d9dbb0c
 train_temp_transform = get_temporal_transform()
 valid_spat_transform = get_spatial_transform(2)
 valid_temp_transform = va.TemporalFit(size=16)

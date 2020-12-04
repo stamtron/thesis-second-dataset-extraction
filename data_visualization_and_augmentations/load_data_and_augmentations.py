@@ -26,6 +26,7 @@ import vidaug.augmentors as va
 from new_dataloader import *
 
 
+<<<<<<< HEAD
 def generate_weight(length=40, lead_in=0.1, lead_out=0.1, min_weight=0.5):
     return np.concatenate([
         np.linspace(min_weight, 1, int(math.ceil(length*lead_in))),
@@ -35,6 +36,8 @@ def generate_weight(length=40, lead_in=0.1, lead_out=0.1, min_weight=0.5):
 
 
 
+=======
+>>>>>>> 85aa5ff558285dffcdf67d1a7a6679627d9dbb0c
 def get_tensor_transform(finetuned_dataset, resize = False):
     if finetuned_dataset == 'ImageNet':
         video_transform_list = [
@@ -75,7 +78,11 @@ def get_temporal_transform(length = 16):
     return temp_transform
 
 
+<<<<<<< HEAD
 def get_spatial_transform(n=1):
+=======
+def get_spatial_transform(n):
+>>>>>>> 85aa5ff558285dffcdf67d1a7a6679627d9dbb0c
     transform = va.SomeOf([
         va.RandomRotate(degrees=20), #andomly rotates the video with a degree randomly choosen from [-10, 10]  
         va.HorizontalFlip(),# horizontally flip the video with 100% probability
@@ -88,9 +95,15 @@ def get_spatial_transform(n=1):
             va.Multiply(0.75),
         ]),
         va.Add(10),
+<<<<<<< HEAD
         #va.Pepper(),
         va.PiecewiseAffineTransform(0.3,0.3,0.3),
         #va.Salt(),
+=======
+        va.Pepper(),
+        va.PiecewiseAffineTransform(0.3,0.3,0.3),
+        va.Salt(),
+>>>>>>> 85aa5ff558285dffcdf67d1a7a6679627d9dbb0c
     ], N=n)
     return transform
 
@@ -152,6 +165,7 @@ def get_indices(df, root_dir):
     return class_image_paths, end_idx, idx_label
 
 
+<<<<<<< HEAD
 def get_final_indices(idx_label, end_idx, window, skip_frames=15, set_step=25, seq_length=50, per_label=True):
     indices = []
     labels = []
@@ -216,6 +230,8 @@ def get_final_indices_2d(idx_label, end_idx, skip_frames=15, set_step=4, seq_len
             labels.append(label)
     return indices, labels     
 
+=======
+>>>>>>> 85aa5ff558285dffcdf67d1a7a6679627d9dbb0c
 def get_loader(seq_length, bs, end_idx, class_image_paths, temp_transform, spat_transform, tensor_transform, lstm, oned, augment, multi):
     sampler = MySampler(end_idx, seq_length)
     dataset = MyDataset(
@@ -235,6 +251,7 @@ def get_loader(seq_length, bs, end_idx, class_image_paths, temp_transform, spat_
         num_workers = 0)
     return loader, dataset
 
+<<<<<<< HEAD
 def get_loader_new(seq_length, bs, indices, class_image_paths, temp_transform, spat_transform, tensor_transform, lstm, oned, augment, multi):
     sampler = MyRandomSampler(indices)
     dataset = MyDataset(
@@ -253,3 +270,5 @@ def get_loader_new(seq_length, bs, indices, class_image_paths, temp_transform, s
         drop_last = True,
         num_workers = 0)
     return loader, dataset
+=======
+>>>>>>> 85aa5ff558285dffcdf67d1a7a6679627d9dbb0c

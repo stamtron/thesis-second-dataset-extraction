@@ -53,7 +53,11 @@ for param in model.module.fc.parameters():
 
 load = True
 if load:
+<<<<<<< HEAD
     checkpoint = torch.load('/media/scratch/astamoulakatos/saved-3d-models/third/best-checkpoint-001epoch.pth')
+=======
+    checkpoint = torch.load('/media/scratch/astamoulakatos/saved-3d-models/second/best-checkpoint-000epoch.pth')
+>>>>>>> 85aa5ff558285dffcdf67d1a7a6679627d9dbb0c
     model.load_state_dict(checkpoint['model_state_dict'])
     print('loading pretrained freezed model!')
 
@@ -71,7 +75,11 @@ check_freeze(model.module)
 #model = nn.DataParallel(model)
     
 tensor_transform = get_tensor_transform('Kinetics', False)
+<<<<<<< HEAD
 train_spat_transform = get_spatial_transform(2)
+=======
+train_spat_transform = get_spatial_transform(0)
+>>>>>>> 85aa5ff558285dffcdf67d1a7a6679627d9dbb0c
 train_temp_transform = get_temporal_transform(16)
 valid_spat_transform = get_spatial_transform(0)
 valid_temp_transform = va.TemporalFit(size=16)
@@ -140,7 +148,11 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', fa
 torch.cuda.empty_cache()
 
 if load:
+<<<<<<< HEAD
     epochs = 10
+=======
+    epochs = 20
+>>>>>>> 85aa5ff558285dffcdf67d1a7a6679627d9dbb0c
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     lr = 1e-3
@@ -157,7 +169,11 @@ dataloaders = {
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 save_model_path = '/media/scratch/astamoulakatos/saved-3d-models/'
 #device = torch.device('cuda')
+<<<<<<< HEAD
 writer = SummaryWriter('runs/ResNet3D_forth_newsampler')
+=======
+writer = SummaryWriter('runs/ResNet3D_third_newsampler')
+>>>>>>> 85aa5ff558285dffcdf67d1a7a6679627d9dbb0c
 train_model_yo(save_model_path, dataloaders, device, model, criterion, optimizer, scheduler, writer, num_epochs=epochs)
 writer.close()
 
