@@ -146,7 +146,7 @@ def _confidence_histogram_subplot(ax, bin_data,
         acc_plt = ax.axvline(x=bin_data["avg_accuracy"], ls="solid", lw=3, 
                              c="black", label="Accuracy")
         conf_plt = ax.axvline(x=bin_data["avg_confidence"], ls="dotted", lw=3, 
-                              c="#444", label="Avg. confidence")
+                              c="red", label="Avg. confidence")
         ax.legend(handles=[acc_plt, conf_plt])
 
 

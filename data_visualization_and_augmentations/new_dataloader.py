@@ -33,11 +33,7 @@ def imshow(inp, title=None):
     plt.pause(0.001)  # pause a bit so that plots are updated 
 
 
-<<<<<<< HEAD
 def show_batch(loader, bs, resnet3d=False, nrows = 4):
-=======
-def show_batch(loader, bs, resnet3d=False):
->>>>>>> 85aa5ff558285dffcdf67d1a7a6679627d9dbb0c
     class_names = ['exp_and','exp_fs','exp','exp_fj','bur']
     one_hot_classes = [[1,0,0,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,1,0,0],[0,1,0,0,0]]
     inputs, classes = next(iter(loader))
@@ -46,11 +42,7 @@ def show_batch(loader, bs, resnet3d=False):
             inputs = inputs.permute(0,2,1,3,4)
     for j in range(bs):
         # Make a grid from batch
-<<<<<<< HEAD
         out = torchvision.utils.make_grid(inputs[j], nrow=4) #int(inputs.shape[1]/3))
-=======
-        out = torchvision.utils.make_grid(inputs[j], nrow=int(inputs.shape[1]/3))
->>>>>>> 85aa5ff558285dffcdf67d1a7a6679627d9dbb0c
         for i, f in enumerate(one_hot_classes):
             if np.array_equal(classes[j].numpy(), np.asarray(f)):
                 title = class_names[i]
@@ -78,8 +70,7 @@ class MySampler(torch.utils.data.Sampler):
     def __len__(self):
         return len(self.indices)
     
-    
-<<<<<<< HEAD
+
 class MyRandomSampler(torch.utils.data.Sampler):
     def __init__(self, indices):
         indices = torch.cat(indices)
@@ -92,9 +83,6 @@ class MyRandomSampler(torch.utils.data.Sampler):
     def __len__(self):
         return len(self.indices)
     
-    
-=======
->>>>>>> 85aa5ff558285dffcdf67d1a7a6679627d9dbb0c
 class MyDataset(Dataset):
     def __init__(self, image_paths, seq_length, temp_transform, spat_transform, tensor_transform, length, lstm=False, oned = False, augment = False, multi = 1): #csv_file, 
         self.image_paths = image_paths

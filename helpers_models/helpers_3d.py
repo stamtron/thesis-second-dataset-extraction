@@ -180,8 +180,8 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 inputs = inputs.to(device)
                 #lab = labels
                 labels = labels.to(device)
-                label_smoothing = 0.1
-                labels_smo = labels * (1 - label_smoothing) + 0.5 * label_smoothing
+                label_smoothing = 0.2
+                labels_smo = labels * (1 - label_smoothing) + label_smoothing / 5
                 
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs, _ = model(inputs)
@@ -210,7 +210,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
-                    #scheduler.step(loss)
+                    scheduler.step()
                     lrate = optimizer.param_groups[0]['lr']
                     lrate = np.array(lrate)
 
@@ -232,7 +232,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 running_f1_macro += f1_score(y.numpy(), pred.numpy(), average="macro")  *  inputs.size(0)
                 running_f1_wei += f1_score(y.numpy(), pred.numpy(), average="weighted")  *  inputs.size(0)
            
-                if (counter!=0) and (counter%10==0):
+                if (counter>0) and (counter%20==0):
                     if phase == 'train':
                         result = '  Training Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(running_loss/(inputs.size(0)*counter),
                                                                                          running_acc/(inputs.size(0)*counter),
@@ -347,7 +347,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 val_losses.append(epoch_loss)
                 val_acc.append(epoch_acc)
                 val_f1.append(epoch_f1)
-                scheduler.step(epoch_loss)
+                #scheduler.step(epoch_loss)
                 
                 if epoch_loss < val_loss:
                     val_loss = epoch_loss

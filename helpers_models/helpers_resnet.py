@@ -518,7 +518,7 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
             running_zero_one = 0.0
             running_hamming_loss = 0.0
             running_loss_bce = 0.0
-            running_jac = 0
+            running_f1_wei = 0.0
             y_true = []
             y_pred = []
             #train_result = []
@@ -528,33 +528,38 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 labels = labels.to(device)
                 label_smoothing = 0.1
                 labels_smo = labels * (1 - label_smoothing) + 0.5 * label_smoothing
-                    
+                
                 with torch.set_grad_enabled(phase == 'train'):
                     outputs, _ = model(inputs)
-                    
+                    #no_of_classes = 5
+                    #beta = 0.99
+                    #samples_per_cls = [46.9, 12.2, 16, 10.8, 14.1]
+                    #wei = CB_weights(lab, samples_per_cls, no_of_classes, beta)
+                    #wei = wei.to(device)
+                    #pos_wei = torch.tensor([100/46.9, 100/12.2, 100/16, 100/10.8, 100/14.1])
+                    #pos_wei = pos_wei.to(device)
+                    #criterion = nn.BCEWithLogitsLoss(weight = wei, pos_weight = pos_wei)
                     if phase == 'train':
-                        #loss = lsep_loss(outputs, labels)
-                        loss = criterion(outputs, labels)
-                        #pos_wei = torch.tensor([1, 1, 1.2, 2, 1])
-                        #pos_wei = pos_wei.to(device)
-                        #criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
-                        #loss_bce = criterion2(outputs, labels_smo)
+                        loss = criterion(outputs, labels_smo)
+                        pos_wei = torch.tensor([1, 1, 1.5, 3, 1])
+                        pos_wei = pos_wei.to(device)
+                        criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
+                        loss_bce = criterion2(outputs, labels_smo)
                     if phase == 'validation':
-                        #loss = lsep_loss(outputs, labels)
                         loss = criterion(outputs, labels)
-                        #pos_wei = torch.tensor([1, 1, 1.2, 2, 1])
-                        #pos_wei = pos_wei.to(device)
-                        #criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
-                        #loss_bce = criterion2(outputs, labels)
-        
+                        pos_wei = torch.tensor([1, 1, 1.5, 3, 1])
+                        pos_wei = pos_wei.to(device)
+                        criterion2 = nn.BCEWithLogitsLoss(pos_weight = pos_wei)
+                        loss_bce = criterion2(outputs, labels)
+                        
                 if phase == 'train':
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
                     #scheduler.step(loss)
-                    #lrate = scheduler.get_lr()
                     lrate = optimizer.param_groups[0]['lr']
                     lrate = np.array(lrate)
+
 
                 preds = torch.sigmoid(outputs).data > 0.5
                 preds = preds.to(torch.float32) 
@@ -563,17 +568,17 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                 y_pred.append(pred)
                 y_true.append(y)
                 
+                running_acc += accuracy_score(y.numpy(), pred.numpy()) *  inputs.size(0)
+                running_f1 += f1_score(y.numpy(), pred.numpy(), average="samples")  *  inputs.size(0)
                 running_loss_bce += loss_bce.item() * inputs.size(0)
                 running_loss += loss.item() * inputs.size(0)
-                running_acc += accuracy_score(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
-                running_f1 += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="samples")  *  inputs.size(0)
-                running_zero_one += hamming_loss(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
-                running_hamming_loss += zero_one_loss(labels.detach().cpu().numpy(), preds.cpu().detach().numpy()) *  inputs.size(0)
-                running_f1_micro += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="micro")  *  inputs.size(0)
-                running_f1_macro += f1_score(labels.detach().cpu().numpy(), (preds.detach().cpu().numpy()), average="macro")  *  inputs.size(0)
-                running_jac += jaccard_score(y.numpy(), pred.numpy(), average="samples")  *  inputs.size(0)
-                
-                if (counter!=0) and (counter%20==0):
+                running_zero_one += zero_one_loss(y.numpy(), pred.numpy()) *  inputs.size(0)
+                running_hamming_loss += hamming_loss(y.numpy(), pred.numpy()) *  inputs.size(0)
+                running_f1_micro += f1_score(y.numpy(), pred.numpy(), average="micro")  *  inputs.size(0)
+                running_f1_macro += f1_score(y.numpy(), pred.numpy(), average="macro")  *  inputs.size(0)
+                running_f1_wei += f1_score(y.numpy(), pred.numpy(), average="weighted")  *  inputs.size(0)
+           
+                if (counter!=0) and (counter%10==0):
                     if phase == 'train':
                         result = '  Training Loss: {:.4f} Acc: {:.4f} F1: {:.4f}'.format(running_loss/(inputs.size(0)*counter),
                                                                                          running_acc/(inputs.size(0)*counter),
@@ -593,9 +598,6 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                         writer.add_scalar('training FJ f1', f1_labels[2], epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('training And f1', f1_labels[3], epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('training FS f1', f1_labels[4], epoch * len(dataloaders[phase]) + counter)
-                        writer.add_scalar('training jaccard score', 
-                                        running_jac/(inputs.size(0)*counter),
-                                        epoch * len(dataloaders[phase]) + counter) 
                         writer.add_scalar('training bce loss',
                                         running_loss_bce/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
@@ -614,6 +616,9 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                         writer.add_scalar('training f1 macro',
                                         running_f1_macro/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('training f1 weighted',
+                                        running_f1_wei/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('training hamming loss',
                                         running_hamming_loss/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
@@ -621,7 +626,6 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                                         running_zero_one/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('learning rate', lrate, epoch * len(dataloaders[phase]) + counter)
-                        
                         y_true = []
                         y_pred = []
                         
@@ -648,15 +652,15 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                         writer.add_scalar('validation f1 macro',
                                         running_f1_macro/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
+                        writer.add_scalar('validation f1 weighted',
+                                        running_f1_wei/(inputs.size(0)*counter),
+                                        epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('validation hamming loss',
                                         running_hamming_loss/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
                         writer.add_scalar('validation zero one loss',
                                         running_zero_one/(inputs.size(0)*counter),
                                         epoch * len(dataloaders[phase]) + counter)
-                        writer.add_scalar('validation jaccard score', 
-                                        running_jac/(inputs.size(0)*counter),
-                                        epoch * len(dataloaders[phase]) + counter) 
                         classes = ['Exposure', 'Burial', 'Field Joint', 'Anode', 'Free Span']
                         y_tr = np.vstack([t.__array__() for tensor in y_true for t in tensor])
                         y_pr = np.vstack([t.__array__() for tensor in y_pred for t in tensor])
@@ -677,9 +681,6 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
             epoch_loss = running_loss / len(dataloaders[phase].dataset)
             epoch_acc = running_acc / len(dataloaders[phase].dataset)
             epoch_f1 = running_f1 / len(dataloaders[phase].dataset)
-
-            print('COUNTER = ')
-            print(counter)
             
             if phase == 'train':
                 train_losses.append(epoch_loss)
@@ -707,12 +708,6 @@ def train_model_yo(save_model_path, dataloaders, device, model, criterion, optim
                     for path in sorted(glob.glob(f'{save_model_path}best-checkpoint-*epoch.pth'))[:-3]:
                         os.remove(path)
                 
-#             logs[prefix + 'log loss'] = epoch_loss.item()
-#             logs[prefix + 'accuracy'] = epoch_acc.item()
-#             logs[prefix + 'f1_score'] = epoch_f1.item()
-            
-#         liveloss.update(logs)
-#         liveloss.send()
         with open("resnet_val_losses.txt", "wb") as fp:   #Pickling
             pickle.dump(val_losses, fp)
         with open("resnet_val_acc.txt", "wb") as fp:   #Pickling
